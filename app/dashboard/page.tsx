@@ -165,6 +165,7 @@ function BarChartCard({ title, sub }: { title: string; sub: string }) {
   );
 }
 
+
 function KeywordRow({ rank, keyword, channel, traffic, isUp }: any) {
   return (
     <tr className="group hover:bg-slate-50/80 transition-colors">
