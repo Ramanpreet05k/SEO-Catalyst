@@ -7,9 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Your model for testing
 model User {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  email String @unique
-  name  String?
+  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
+  email               String       @unique
+  name                String?
+  password            String?      // Your existing password field
+  
+  // --- New Onboarding Fields ---
+  website             String?
+  brandDescription    String?
+  region              String       @default("US")
+  language            String       @default("en")
+  onboardingCompleted Boolean      @default(false)
+
+  // --- Relations to other collections ---
+  competitors         Competitor[]
+  seoTopics           SeoTopic[]
+}
+
+model Competitor {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  url       String?
+  
+  // Relation back to User (Must use @db.ObjectId for MongoDB)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
+
+model SeoTopic {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  topicName String
+  
+  // Relation back to User (Must use @db.ObjectId for MongoDB)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
 }

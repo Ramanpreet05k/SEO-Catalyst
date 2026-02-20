@@ -1,3 +1,4 @@
+import "./globals.css";
 // Inside app/layout.tsx
 import { AuthProvider } from "@/components/AuthProvider";
 
