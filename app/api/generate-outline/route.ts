@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     if (!topic) return NextResponse.json({ error: "Topic not found" }, { status: 404 });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `You are an expert SEO Content Strategist. Create a detailed, professional article outline for the topic: "${topic.topicName}".
     
     Context about the brand writing this: "${topic.user.brandDescription || 'A professional brand'}".

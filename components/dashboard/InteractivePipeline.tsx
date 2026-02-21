@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Zap, Target, CheckCircle2, Clock, MoreHorizontal, AlertCircle } from "lucide-react";
+import { Zap, Target, CheckCircle2, Clock, MoreHorizontal, AlertCircle, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { deleteTopic } from "@/app/actions/topic";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Topic {
   id: string;
@@ -14,10 +22,22 @@ interface Topic {
 }
 
 export function InteractivePipeline({ initialTopics }: { initialTopics: Topic[] }) {
-  // 1. State for Interactive Filtering
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+  const router = useRouter();
 
-  // 2. True Semantic Mapping: Group topics by their Core Entity
+  // Handle the deletion request
+  const handleDelete = async (id: string) => {
+    // Optional: Add a quick browser confirm dialog
+    if (confirm("Are you sure you want to delete this topic?")) {
+      try {
+        await deleteTopic(id);
+      } catch (error) {
+        console.error("Failed to delete topic:", error);
+      }
+    }
+  };
+
+  // True Semantic Mapping
   const entityMap = initialTopics.reduce((acc, topic) => {
     const entityName = topic.coreEntity || "General";
     if (!acc[entityName]) acc[entityName] = [];
@@ -25,25 +45,23 @@ export function InteractivePipeline({ initialTopics }: { initialTopics: Topic[] 
     return acc;
   }, {} as Record<string, Topic[]>);
 
-  // 3. Analytics & Gap Analysis Logic
+  // Analytics & Gap Analysis Logic
   const entities = Object.keys(entityMap).map(entityName => {
     const topics = entityMap[entityName];
     const total = topics.length;
     const published = topics.filter(t => t.status === "Published").length;
     
-    // Coverage Meter Math (%)
     const coverage = total === 0 ? 0 : Math.round((published / total) * 100);
     
-    // Simulated Competitor Gap Analysis (In production, replace with real SERP data)
     const gapScore = Math.random(); 
-    let gapStatus = "Owned"; // Green
-    if (gapScore > 0.6) gapStatus = "Content Gap"; // Red (Competitors have it, you don't)
-    else if (gapScore > 0.3) gapStatus = "Battleground"; // Yellow (Both have it)
+    let gapStatus = "Owned"; 
+    if (gapScore > 0.6) gapStatus = "Content Gap"; 
+    else if (gapScore > 0.3) gapStatus = "Battleground"; 
 
     return { name: entityName, total, published, coverage, gapStatus };
   }).sort((a, b) => b.total - a.total);
 
-  // 4. Apply Filter
+  // Apply Filter
   const displayedTopics = selectedEntity 
     ? initialTopics.filter(t => t.coreEntity === selectedEntity)
     : initialTopics;
@@ -51,7 +69,7 @@ export function InteractivePipeline({ initialTopics }: { initialTopics: Topic[] 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700">
       
-      {/* LEFT: AI TOPIC PIPELINE (Filtered) */}
+      {/* LEFT: AI TOPIC PIPELINE */}
       <Card className="lg:col-span-2 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden flex flex-col">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-5">
           <div className="flex items-center justify-between">
@@ -88,9 +106,9 @@ export function InteractivePipeline({ initialTopics }: { initialTopics: Topic[] 
             <tbody className="divide-y divide-slate-100">
               {displayedTopics.length > 0 ? (
                 displayedTopics.map((topic) => (
-                  <tr key={topic.id} className="group hover:bg-slate-50 transition-colors cursor-pointer">
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-slate-900">{topic.topicName}</span>
+                  <tr key={topic.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => router.push(`/dashboard/editor/${topic.id}`)}>
+                      <span className="text-sm font-bold text-slate-900 hover:text-indigo-600 transition-colors">{topic.topicName}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md capitalize">
@@ -106,9 +124,30 @@ export function InteractivePipeline({ initialTopics }: { initialTopics: Topic[] 
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="h-8 w-8 inline-flex items-center justify-center rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 transition-all">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      
+                      {/* ACTION DROPDOWN MENU */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="h-8 w-8 inline-flex items-center justify-center rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-900 transition-all focus:opacity-100">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-100 p-1">
+                          <DropdownMenuItem 
+                            onClick={() => router.push(`/dashboard/editor/${topic.id}`)}
+                            className="cursor-pointer text-xs font-bold text-slate-700 focus:bg-indigo-50 focus:text-indigo-700 rounded-lg p-2.5"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 mr-2" /> Continue Editing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(topic.id)}
+                            className="cursor-pointer text-xs font-bold text-rose-600 focus:bg-rose-50 focus:text-rose-700 rounded-lg p-2.5 mt-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Topic
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                     </td>
                   </tr>
                 ))

@@ -33,3 +33,23 @@ export async function saveDocument(topicId: string, content: string) {
   });
   revalidatePath("/dashboard");
 }
+
+
+export async function deleteTopic(topicId: string) {
+  const session = await getServerSession();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) throw new Error("User not found");
+
+  // Securely delete the topic, ensuring it belongs to the logged-in user
+  await prisma.seoTopic.delete({
+    where: { 
+      id: topicId,
+      userId: user.id 
+    }
+  });
+
+  // Refreshes the dashboard instantly to remove the deleted row
+  revalidatePath("/dashboard");
+}
