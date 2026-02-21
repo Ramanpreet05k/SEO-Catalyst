@@ -2,18 +2,30 @@ import React from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Sparkles, PenLine, Target, ArrowRight, Zap, CheckCircle2, Clock, MoreHorizontal, Plus } from "lucide-react";
+import { 
+  Sparkles, 
+  PenLine, 
+  Target, 
+  ArrowRight, 
+  Zap, 
+  CheckCircle2, 
+  Clock, 
+  MoreHorizontal 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AeoMeter } from "@/components/dashboard/AeoMeter";
+import { CompetitorModal } from "@/components/dashboard/CompetitorModal";
 
 export default async function ProfessionalDashboard() {
   const session = await getServerSession();
+  
+  // 1. Check if user is logged in
   if (!session?.user?.email) {
     redirect("/login");
   }
 
-  // Fetch User Data, Competitors, and Topics
+  // 2. Fetch User Data, Competitors, and Topics from Database
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
@@ -47,9 +59,10 @@ export default async function ProfessionalDashboard() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="bg-white rounded-xl h-11 border-slate-200 font-bold shadow-sm">
-              <Plus className="w-4 h-4 mr-2" /> Track Competitor
-            </Button>
+            
+            {/* DYNAMIC COMPETITOR MODAL COMPONENT */}
+            <CompetitorModal activeCompetitors={activeCompetitors} />
+
             <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-11 px-6 font-bold shadow-sm">
               <PenLine className="w-4 h-4 mr-2" /> New Content
             </Button>
@@ -61,7 +74,11 @@ export default async function ProfessionalDashboard() {
           
           {/* 1. DYNAMIC AEO METER */}
           <div className="md:col-span-4 lg:col-span-3">
-             <AeoMeter website={user.website || ""} />
+             <AeoMeter 
+               website={user.website || ""} 
+               initialScore={user.aeoScore} 
+               initialStatus={user.aeoStatus} 
+             />
           </div>
 
           {/* 2. NEXT BEST ACTION */}
