@@ -2,190 +2,259 @@
 
 import React from "react";
 import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  MoreVertical, 
-  Info, 
-  Download,
-  Search,
+  Sparkles, 
+  PenLine, 
+  Target, 
+  ArrowRight,
+  ShieldCheck,
   Zap,
-  BarChart3
+  CheckCircle2,
+  Clock,
+  MoreHorizontal,
+  Plus
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// --- HELPERS & TYPES ---
+export default function ProfessionalDashboard() {
+  // Mock score for the meter (82 out of 100)
+  const aeoScore = 82;
+  // Circumference of the SVG semi-circle arc (pi * radius of 80)
+  const arcLength = 251.2; 
+  const arcOffset = arcLength * (1 - aeoScore / 100);
 
-interface MetricProps {
-  label: string;
-  value: string;
-  trend?: string;
-  isUp?: boolean;
-}
-
-const TrendBadge = ({ trend, isUp }: { trend: string; isUp: boolean }) => (
-  <span className={cn(
-    "text-[10px] font-bold flex items-center mb-1",
-    isUp ? "text-green-500" : "text-red-500"
-  )}>
-    {isUp ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
-    {trend}
-  </span>
-);
-
-// --- MAIN COMPONENT ---
-
-export default function AdvancedDashboard() {
   return (
-    <div className="p-6 lg:p-10 space-y-8 animate-in fade-in duration-700 bg-slate-50/30 min-h-screen">
-      {/* --- HEADER --- */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Optimization Health</h1>
-          <p className="text-sm text-slate-500">Real-time visibility across search engines and AI generative answers.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="bg-white">
-            <Download className="w-4 h-4 mr-2" /> Export Report
-          </Button>
-        </div>
-      </header>
-
-      {/* --- TOP STATS CARDS --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard label="Keywords Tracked" value="1,284" trend="+23.01%" isUp={true} />
-        <MetricCard label="Responses Analyzed" value="3,912" trend="+1.2%" isUp={true} />
-        <MetricCard label="Successful Backlinks" value="126" trend="-2.4%" isUp={false} />
-        <MetricCard label="Domain Authority" value="63" />
-      </div>
-
-      {/* --- GRAPHS SECTION --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ChartCard title="Search Engine Trend" sub="Traffic growth following core ranking gains." />
-        <ChartCard title="AI Answer Visibility" sub="Visibility share in AI-generated snapshots." />
-        <BarChartCard title="Outreach Effectiveness" sub="Conversion rate of high-authority link placements." />
-      </div>
-
-      {/* --- SEO PERFORMANCE TABLE --- */}
-      <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 p-6">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-bold">SEO Keyword Performance</CardTitle>
-            <p className="text-xs text-slate-500">Tracking top 50 performing organic keywords.</p>
+    <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 font-sans text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* --- HEADER --- */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              Workspace Overview
+            </h1>
+            <p className="text-slate-500 mt-1">
+              AI visibility and content intelligence for <span className="font-semibold text-slate-700">valnee.com</span>
+            </p>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
-            <MoreVertical className="w-4 h-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <tr>
-                  <th className="px-6 py-4">Rank</th>
-                  <th className="px-6 py-4">Keyword</th>
-                  <th className="px-6 py-4">Channel</th>
-                  <th className="px-6 py-4">Traffic Change</th>
-                  <th className="px-6 py-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                <KeywordRow rank="#1" keyword="AI Automation Strategy" channel="Social" traffic="+23.01%" isUp={true} />
-                <KeywordRow rank="#2" keyword="Next.js SEO Framework" channel="Organic Search" traffic="+12.45%" isUp={true} />
-                <KeywordRow rank="#3" keyword="Answer Engine Optimization" channel="AI Snapshot" traffic="-5.21%" isUp={false} />
-              </tbody>
-            </table>
+          <div className="flex gap-3">
+            <Button variant="outline" className="bg-white rounded-xl h-11 border-slate-200 font-bold shadow-sm">
+              <Plus className="w-4 h-4 mr-2" /> Track Competitor
+            </Button>
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-11 px-6 font-bold shadow-sm">
+              <PenLine className="w-4 h-4 mr-2" /> New Content
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </header>
+
+        {/* --- TOP ROW: METER & ACTION --- */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          {/* 1. AEO METER GAUGE */}
+          <Card className="md:col-span-4 lg:col-span-3 border-slate-200 shadow-sm rounded-2xl bg-white">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                  AEO Readiness
+                </CardTitle>
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center pt-4">
+              {/* Custom SVG Meter */}
+              <div className="relative w-48 h-28 flex justify-center overflow-hidden">
+                <svg viewBox="0 0 200 120" className="w-full h-full drop-shadow-sm">
+                  {/* Background Track */}
+                  <path 
+                    d="M 20 100 A 80 80 0 0 1 180 100" 
+                    fill="none" 
+                    stroke="#f1f5f9" 
+                    strokeWidth="14" 
+                    strokeLinecap="round" 
+                  />
+                  {/* Dynamic Score Track */}
+                  <path 
+                    d="M 20 100 A 80 80 0 0 1 180 100" 
+                    fill="none" 
+                    stroke="#0f172a" 
+                    strokeWidth="14" 
+                    strokeLinecap="round" 
+                    strokeDasharray={arcLength}
+                    strokeDashoffset={arcOffset}
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                {/* Score Number in Center */}
+                <div className="absolute bottom-2 flex flex-col items-center">
+                  <span className="text-4xl font-black text-slate-900 leading-none">{aeoScore}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Good</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 2. NEXT BEST ACTION (Main Focus) */}
+          <Card className="md:col-span-8 lg:col-span-6 border-slate-200 shadow-sm rounded-2xl bg-white flex flex-col justify-center">
+            <CardContent className="p-8 flex flex-col justify-center h-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold w-fit mb-4 border border-indigo-100">
+                <Sparkles className="w-3.5 h-3.5" /> Priority Action
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">
+                Draft: "The Future of Semantic Search in B2B"
+              </h2>
+              <p className="text-slate-500 text-sm leading-relaxed max-w-lg mb-6">
+                Gemini identified this as a high-impact gap in your content. Publishing this establishes authority for your core entities before your competitors do.
+              </p>
+              <Button className="w-fit bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-6 shadow-sm">
+                Start Writing in Editor <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 3. QUICK STATS */}
+          <Card className="md:col-span-12 lg:col-span-3 border-slate-200 shadow-sm rounded-2xl bg-white flex flex-row lg:flex-col divide-x lg:divide-x-0 lg:divide-y divide-slate-100">
+             <div className="flex-1 p-6 flex flex-col justify-center">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Tracked Competitors</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl font-black text-slate-900">3</span>
+                  <Target className="w-5 h-5 text-rose-500" />
+                </div>
+             </div>
+             <div className="flex-1 p-6 flex flex-col justify-center">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Brand Entities</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl font-black text-slate-900">12</span>
+                  <Zap className="w-5 h-5 text-amber-500" />
+                </div>
+             </div>
+          </Card>
+
+        </div>
+
+        {/* --- BOTTOM ROW: DATA TABLES --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* TOPIC PIPELINE (Takes up 2/3 of space) */}
+          <Card className="lg:col-span-2 border-slate-200 shadow-sm rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900">AI Topic Pipeline</CardTitle>
+                  <p className="text-xs text-slate-500 mt-1">Generated content roadmap based on your brand profile.</p>
+                </div>
+                <Button variant="ghost" size="sm" className="text-indigo-600 font-bold">View All</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full text-left">
+                <thead className="bg-white text-[10px] font-bold uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Topic Title</th>
+                    <th className="px-6 py-4">Priority</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  <TopicRow title="How to Optimize for ChatGPT Answers" priority="High" status="In Progress" />
+                  <TopicRow title="Next.js SEO Best Practices for 2026" priority="High" status="To Do" />
+                  <TopicRow title="Understanding LLM Context Windows" priority="Medium" status="Published" />
+                  <TopicRow title="AEO vs Traditional SEO" priority="Low" status="To Do" />
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          {/* SIDE PANEL: ENTITIES & COMPETITORS */}
+          <div className="space-y-6">
+            
+            {/* Semantic Entities */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="py-5">
+                <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" /> Core Entities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md border border-slate-200">SEO Strategy</span>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md border border-slate-200">AI Automation</span>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md border border-slate-200">B2B SaaS</span>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md border border-slate-200">Next.js</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Competitors List */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="py-5">
+                <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-rose-500" /> Active Competitors
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <CompetitorRow name="Linear" domain="linear.app" />
+                <CompetitorRow name="ClickUp" domain="clickup.com" />
+                <CompetitorRow name="Netlify" domain="netlify.com" />
+              </CardContent>
+            </Card>
+
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
 
-// --- SUB-COMPONENTS ---
+// --- HELPER COMPONENTS ---
 
-function MetricCard({ label, value, trend, isUp = true }: MetricProps) {
+function TopicRow({ title, status, priority }: any) {
+  const isHigh = priority === "High";
+  const isPublished = status === "Published";
+  const isInProgress = status === "In Progress";
+  
   return (
-    <Card className="border border-slate-200 shadow-sm rounded-xl bg-white hover:border-slate-300 transition-all">
-      <CardContent className="p-6">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">{label}</p>
-        <div className="flex items-end justify-between">
-          <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
-          {trend && <TrendBadge trend={trend} isUp={isUp} />}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ChartCard({ title, sub }: { title: string; sub: string }) {
-  return (
-    <Card className="border border-slate-200 shadow-sm rounded-xl bg-white p-6 h-64 flex flex-col">
-      <div className="flex justify-between items-start mb-1">
-        <h4 className="text-sm font-bold text-slate-900">{title}</h4>
-        <Info className="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 cursor-help" />
-      </div>
-      <p className="text-[10px] text-slate-400 mb-auto">{sub}</p>
-      <div className="w-full h-32 flex items-end">
-        <svg viewBox="0 0 100 40" className="w-full h-full text-slate-900 overflow-visible">
-          <path 
-            d="M0,35 Q20,30 40,32 T80,10 T100,5" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round"
-          />
-          <circle cx="60" cy="22" r="2.5" fill="white" stroke="currentColor" strokeWidth="2" />
-        </svg>
-      </div>
-    </Card>
-  );
-}
-
-function BarChartCard({ title, sub }: { title: string; sub: string }) {
-  return (
-    <Card className="border border-slate-200 shadow-sm rounded-xl bg-white p-6 h-64 flex flex-col">
-      <div className="flex justify-between items-start mb-1">
-        <h4 className="text-sm font-bold text-slate-900">{title}</h4>
-        <BarChart3 className="w-3.5 h-3.5 text-slate-300" />
-      </div>
-      <p className="text-[10px] text-slate-400 mb-auto">{sub}</p>
-      <div className="flex items-end justify-between h-32 gap-2 mt-4">
-        {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
-          <div key={i} className="bg-slate-100 w-full rounded-t-sm relative overflow-hidden h-full">
-            <div 
-              className="absolute bottom-0 bg-slate-900 w-full transition-all duration-700 ease-in-out" 
-              style={{ height: `${h}%` }} 
-            />
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-
-function KeywordRow({ rank, keyword, channel, traffic, isUp }: any) {
-  return (
-    <tr className="group hover:bg-slate-50/80 transition-colors">
-      <td className="px-6 py-5 text-xs font-semibold text-slate-400">{rank}</td>
-      <td className="px-6 py-5">
-        <span className="text-sm font-semibold text-slate-900">{keyword}</span>
+    <tr className="group hover:bg-slate-50 transition-colors cursor-pointer">
+      <td className="px-6 py-4">
+        <span className="text-sm font-bold text-slate-900">{title}</span>
       </td>
-      <td className="px-6 py-5">
-        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold uppercase tracking-tight">
-          {channel}
+      <td className="px-6 py-4">
+        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isHigh ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-indigo-500' : 'bg-slate-400'}`} />
+          {priority}
         </span>
       </td>
-      <td className="px-6 py-5">
-        <TrendBadge trend={traffic} isUp={isUp} />
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+          {isPublished ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : 
+           isInProgress ? <Clock className="w-4 h-4 text-amber-500" /> : 
+           <div className="w-4 h-4 rounded-full border-2 border-slate-300" />}
+          {status}
+        </div>
       </td>
-      <td className="px-6 py-5 text-right">
-        <button className="text-slate-300 hover:text-slate-900 transition-colors p-1">
-          <MoreVertical className="w-4 h-4" />
-        </button>
+      <td className="px-6 py-4 text-right">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
       </td>
     </tr>
+  );
+}
+
+function CompetitorRow({ name, domain }: { name: string, domain: string }) {
+  return (
+    <div className="flex items-center justify-between group">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200">
+          {name.charAt(0)}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-900 leading-none">{name}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{domain}</p>
+        </div>
+      </div>
+      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-900 transition-colors" />
+    </div>
   );
 }
