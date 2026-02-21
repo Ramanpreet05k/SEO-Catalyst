@@ -20,6 +20,10 @@ model User {
   language            String       @default("en")
   onboardingCompleted Boolean      @default(false)
 
+  // --- AEO Analytics Fields ---
+  aeoScore            Int?
+  aeoStatus           String?
+
   // --- Relations to other collections ---
   competitors         Competitor[]
   seoTopics           SeoTopic[]
