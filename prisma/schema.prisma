@@ -42,12 +42,14 @@ model Competitor {
 }
 
 model SeoTopic {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  topicName String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  topicName   String
+  content     String?  // <-- ADD THIS LINE
+  status      String   @default("To Do")     
+  priority    String   @default("Medium")    
+  coreEntity  String   @default("General")   
   
-  // Relation back to User (Must use @db.ObjectId for MongoDB)
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
