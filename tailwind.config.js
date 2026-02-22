@@ -49,5 +49,9 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+ // ... rest of your config ...
+  plugins: [
+    require("tailwindcss-animate"), // You likely already have this from Shadcn
+    require("@tailwindcss/typography"), // <--- ADD THIS LINE
+  ],
 }

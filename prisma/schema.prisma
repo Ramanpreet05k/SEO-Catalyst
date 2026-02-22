@@ -42,14 +42,17 @@ model Competitor {
 }
 
 model SeoTopic {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  topicName   String
-  content     String?  // <-- ADD THIS LINE
-  status      String   @default("To Do")     
-  priority    String   @default("Medium")    
-  coreEntity  String   @default("General")   
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  topicName         String
+  content           String?
+  status            String   @default("To Do")     
+  priority          String   @default("Medium")    
+  coreEntity        String   @default("General")
   
-  userId      String   @db.ObjectId
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  // --- NEW FIELD FOR LIVE TRACKING ---
+  suggestedEntities String[] @default([])
+  
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
 }

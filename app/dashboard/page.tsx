@@ -9,6 +9,8 @@ import { AeoMeter } from "@/components/dashboard/AeoMeter";
 import { CompetitorModal } from "@/components/dashboard/CompetitorModal";
 import { InteractivePipeline } from "@/components/dashboard/InteractivePipeline";
 import { NewContentModal } from "@/components/dashboard/NewContentModal";
+import { UserSettingsModal } from "@/components/dashboard/UserSettingsModal"; // <-- Added Settings Modal
+import Link from "next/link";
 
 export default async function ProfessionalDashboard() {
   const session = await getServerSession();
@@ -47,7 +49,11 @@ export default async function ProfessionalDashboard() {
 
   // Extract unique entities for the top stats card count
   const uniqueEntities = Array.from(new Set(mappedTopics.map(t => t.coreEntity)));
-  const priorityTopic = mappedTopics[0]?.topicName || 'Your first semantic article';
+  
+  // Find the first topic that IS NOT published to be the priority action
+  const topTopic = mappedTopics.find(t => t.status !== "Published") || mappedTopics[0];
+  const priorityTopicName = topTopic?.topicName || 'Your first semantic article';
+  const priorityTopicId = topTopic?.id;
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 font-sans text-slate-900">
@@ -61,7 +67,11 @@ export default async function ProfessionalDashboard() {
               AI visibility and content intelligence for <span className="font-semibold text-slate-700">{user.website || "your brand"}</span>
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            
+            {/* The new Settings Gear */}
+            <UserSettingsModal user={user} />
+
             {/* Server Action Modal for adding new competitors */}
             <CompetitorModal activeCompetitors={activeCompetitors} />
             
@@ -82,19 +92,29 @@ export default async function ProfessionalDashboard() {
              />
           </div>
 
-          {/* NEXT BEST ACTION HERO CARD */}
+          {/* NEXT BEST ACTION HERO CARD (Fully dynamic and clickable) */}
           <Card className="md:col-span-8 lg:col-span-6 border-slate-200 shadow-sm rounded-2xl bg-white flex flex-col justify-center">
             <CardContent className="p-8 flex flex-col justify-center h-full">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold w-fit mb-4 border border-indigo-100">
                 <Sparkles className="w-3.5 h-3.5" /> Priority Action
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Draft: "{priorityTopic}"</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Draft: "{priorityTopicName}"</h2>
               <p className="text-slate-500 text-sm leading-relaxed max-w-lg mb-6">
                 Gemini identified this as a high-impact gap. Publishing this establishes authority for your core entities before your competitors do.
               </p>
-              <Button className="w-fit bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-6 shadow-sm">
-                Start Writing in Editor <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              
+              {priorityTopicId ? (
+                <Button asChild className="w-fit bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-6 shadow-sm">
+                  <Link href={`/dashboard/editor/${priorityTopicId}`}>
+                    Start Writing in Editor <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button disabled className="w-fit bg-indigo-600/50 text-white rounded-xl font-bold px-6 shadow-sm cursor-not-allowed">
+                  Pipeline Complete <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+
             </CardContent>
           </Card>
 
