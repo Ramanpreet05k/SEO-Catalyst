@@ -10,7 +10,8 @@ import {
   TrendingUp, 
   ChevronLeft,
   Settings,
-  Zap
+  Zap,
+  Activity // 1. Added a new icon for the optimization tab
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,8 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     { icon: Target, label: "Topic Pipeline", href: "/dashboard/topics" },
     { icon: Users, label: "Competitors", href: "/dashboard/competitors" },
     { icon: TrendingUp, label: "Visibility", href: "/dashboard/visibility" },
+    // 2. Added the new Optimization route to your navigation list
+    { icon: Activity, label: "Optimization", href: "/dashboard/optimization" }, 
   ];
 
   return (
@@ -59,13 +62,15 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         </Button>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1 mt-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          // Check if the current pathname includes the href to keep it highlighted on sub-pages
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          
           return (
             <Link key={item.href} href={item.href}>
               <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group mb-1",
                 isActive 
                   ? "bg-slate-100 text-slate-900 font-bold" 
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"

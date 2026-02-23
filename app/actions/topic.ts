@@ -19,7 +19,7 @@ export async function createCustomTopic(formData: FormData) {
       topicName,
       coreEntity: topicName.split(' ').slice(0, 2).join(' '), // Auto-generate entity
       userId: user.id,
-      status: "In Progress"
+      status: "Idea" // Changed from "In Progress" so it starts in the first Kanban column
     }
   });
 
@@ -29,11 +29,12 @@ export async function createCustomTopic(formData: FormData) {
 export async function saveDocument(topicId: string, content: string) {
   await prisma.seoTopic.update({
     where: { id: topicId },
-    data: { content, status: "In Progress" }
+    data: { content } // Removed forced "In Progress" so it doesn't overwrite Kanban drag-and-drop positioning
   });
+  
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/topics");
 }
-
 
 export async function deleteTopic(topicId: string) {
   const session = await getServerSession();
@@ -43,13 +44,64 @@ export async function deleteTopic(topicId: string) {
   if (!user) throw new Error("User not found");
 
   // Securely delete the topic, ensuring it belongs to the logged-in user
-  await prisma.seoTopic.delete({
+  // Using deleteMany prevents Prisma schema errors when combining ID and UserId
+  await prisma.seoTopic.deleteMany({
     where: { 
       id: topicId,
       userId: user.id 
     }
   });
 
-  // Refreshes the dashboard instantly to remove the deleted row
+  // Refreshes all dashboards instantly to remove the deleted row
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/topics");
+}
+
+// NEW: Required for the Kanban Drag-and-Drop Board
+export async function updateTopicStatus(topicId: string, newStatus: string) {
+  const session = await getServerSession();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) throw new Error("User not found");
+
+  // Using updateMany for safe compound where-clauses
+  await prisma.seoTopic.updateMany({
+    where: { 
+      id: topicId,
+      userId: user.id 
+    },
+    data: { 
+      status: newStatus 
+    }
+  });
+
+  revalidatePath("/dashboard/topics");
+  revalidatePath("/dashboard"); // Keeps the AEO status meter synced
+}
+
+// Add this new function to the bottom of app/actions/topic.ts
+
+export async function addPipelineTopic(topicName: string, status: string = "Idea") {
+  const session = await getServerSession();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user) throw new Error("User not found");
+
+  // Generate a basic entity from the title
+  const coreEntity = topicName.split(' ').slice(0, 2).join(' ').replace(/[^a-zA-Z0-9 ]/g, "") || "General";
+
+  await prisma.seoTopic.create({
+    data: {
+      topicName,
+      coreEntity,
+      userId: user.id,
+      status: status,
+      priority: "Medium"
+    }
+  });
+
+  revalidatePath("/dashboard/pipeline");
   revalidatePath("/dashboard");
 }
