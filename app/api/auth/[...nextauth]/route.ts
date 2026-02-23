@@ -17,8 +17,6 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Missing email or password");
         }
-
-        // Find the user in MongoDB
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
