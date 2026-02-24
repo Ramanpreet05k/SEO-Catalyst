@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { requestAiEdit, saveDraftManually } from "@/app/actions/draft";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
+import { PublishModal } from "@/components/editor/PublishModal"; // <-- Added Import
 
 const QUICK_ACTIONS = [
   "Fix grammar and spelling",
@@ -78,11 +79,14 @@ export function DraftEditorClient({ topic }: { topic: any }) {
           <Button 
             onClick={handleSave} 
             disabled={isSaving || isPending}
-            className="bg-slate-900 hover:bg-black text-white font-bold"
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Draft
           </Button>
+
+          {/* THE NEW PUBLISH MODAL */}
+          <PublishModal topicId={topic.id} isPublished={topic.status === "Published"} />
         </div>
       </header>
 
