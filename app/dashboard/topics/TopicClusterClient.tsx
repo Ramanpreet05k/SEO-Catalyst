@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Network, Plus, FileText, CheckCircle2, Clock, Edit3, Loader2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addClusterNode } from "@/app/actions/cluster";
-
 type Topic = {
   id: string;
   topicName: string;
