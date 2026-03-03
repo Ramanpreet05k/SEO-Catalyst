@@ -1,53 +1,41 @@
-import React from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { PipelineBoard } from "@/components/pipeline/PipelineBoard";
-import { AiBrainstormer } from "@/components/pipeline/AiBrainstormer";
-import { CreateTopicModal } from "@/components/pipeline/CreateTopicModal"; // 1. Add this import
+import { TopicClusterClient } from "./TopicClusterClient";
 
-export default async function PipelinePage() {
+export default async function TopicsPage() {
   const session = await getServerSession();
   
-  if (!session?.user?.email) redirect("/login");
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
-      seoTopics: { orderBy: { createdAt: 'desc' } }
+      seoTopics: {
+        orderBy: { createdAt: 'asc' }
+      }
     }
   });
 
-  if (!user) redirect("/login");
-
-  const mappedTopics = (user.seoTopics || []).map((topic, index) => {
-    const fallbackEntity = topic.topicName.split(' ').slice(0, 2).join(' ').replace(/[^a-zA-Z0-9 ]/g, "");
-    return {
-      id: topic.id,
-      topicName: topic.topicName,
-      status: (topic as any).status || "Idea",
-      priority: (topic as any).priority || (index < 3 ? "High" : "Medium"),
-      coreEntity: (topic as any).coreEntity || fallbackEntity || "General",
-    };
-  });
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
-    <div className="h-screen bg-slate-50/30 p-6 font-sans text-slate-900 overflow-hidden flex flex-col">
-      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="min-h-screen bg-slate-50/30 p-6 md:p-10 font-sans text-slate-900">
+      <div className="max-w-[1400px] mx-auto animate-in fade-in duration-500">
         
-        {/* --- UPDATED HEADER --- */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Content Pipeline</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage your SEO production workflow.</p>
-          </div>
-          
-          {/* 2. Place the Modal Button Here */}
-          <CreateTopicModal />
+        <header className="mb-8">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Topic Clusters</h1>
+          <p className="text-slate-500 mt-1">
+            Map out your semantic strategy. Build authority by supporting your core pillars with tightly grouped cluster articles.
+          </p>
         </header>
 
-        <AiBrainstormer />
-        <PipelineBoard initialTopics={mappedTopics} />
+        {/* The new Visual Node Graph completely replaces the Kanban Board! */}
+        <TopicClusterClient initialTopics={user.seoTopics} />
 
       </div>
     </div>

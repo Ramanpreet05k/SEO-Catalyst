@@ -3,18 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Target, 
-  Users, 
-  TrendingUp, 
-  ChevronLeft,
-  Settings,
-  Zap,
-  Activity // 1. Added a new icon for the optimization tab
-} from "lucide-react";
+import { LayoutDashboard, Target, Users, TrendingUp, ChevronLeft, Settings, Zap, Activity, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,12 +16,12 @@ interface SidebarProps {
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
 
-  const navItems = [
+const navItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Target, label: "Topic Pipeline", href: "/dashboard/topics" },
+    { icon: Library, label: "Content Library", href: "/dashboard/library" }, // <-- ADDED HERE
     { icon: Users, label: "Competitors", href: "/dashboard/competitors" },
     { icon: TrendingUp, label: "Visibility", href: "/dashboard/visibility" },
-    // 2. Added the new Optimization route to your navigation list
     { icon: Activity, label: "Optimization", href: "/dashboard/optimization" }, 
   ];
 
