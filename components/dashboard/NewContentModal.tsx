@@ -5,7 +5,7 @@ import { PenLine, FileText, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { createCustomTopic } from "@/app/actions/topic";
+import { createNewArticle } from "@/app/actions/topic";
 
 export function NewContentModal({ topics }: { topics: any[] }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,9 +17,21 @@ export function NewContentModal({ topics }: { topics: any[] }) {
     router.push(`/dashboard/editor/${id}`);
   };
 
-  const handleCustomSubmit = async (formData: FormData) => {
-    setIsLoading(true);
-    await createCustomTopic(formData);
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    startTransition(async () => {
+      try {
+        // Use the new function, which returns the ID of the new draft
+        const newTopicId = await createNewArticle(formData);
+        
+        // Push the user directly into their new AI editor canvas
+        router.push(`/dashboard/editor/${newTopicId}`);
+      } catch (error) {
+        alert("Failed to create article. Please try again.");
+      }
+    });
   };
 
   return (
@@ -38,7 +50,7 @@ export function NewContentModal({ topics }: { topics: any[] }) {
 
         <div className="p-6 space-y-6">
           {/* Custom Topic Form */}
-          <form action={handleCustomSubmit} className="flex gap-2">
+          <form onSubmit={handleSubmit} className="flex gap-2">
             <input 
               type="text" 
               name="topicName" 

@@ -18,8 +18,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
 const navItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-    { icon: Target, label: "Topic Pipeline", href: "/dashboard/topics" },
-    { icon: Library, label: "Content Library", href: "/dashboard/library" }, // <-- ADDED HERE
+    { icon: Library, label: "Content Library", href: "/dashboard/library" }, 
     { icon: Users, label: "Competitors", href: "/dashboard/competitors" },
     { icon: TrendingUp, label: "Visibility", href: "/dashboard/visibility" },
     { icon: Activity, label: "Optimization", href: "/dashboard/optimization" }, 

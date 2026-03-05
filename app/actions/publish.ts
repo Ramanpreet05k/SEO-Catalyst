@@ -11,45 +11,50 @@ export async function publishToWebhook(topicId: string, webhookUrl: string) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) throw new Error("User not found");
 
-  const topic = await prisma.seoTopic.findUnique({
+  // 1. Get the article data
+  const topic = await prisma.seoTopic.findFirst({
     where: { id: topicId, userId: user.id }
   });
 
-  if (!topic) throw new Error("Topic not found.");
-  if (!topic.content) throw new Error("Cannot publish an empty article.");
+  if (!topic) throw new Error("Article not found.");
+
+  // 2. Prepare the JSON payload to send
+  const payload = {
+    title: topic.topicName,
+    content: topic.content,
+    coreEntity: topic.coreEntity,
+    authorName: user.name || user.email,
+    publishedAt: new Date().toISOString()
+  };
 
   try {
-    // 1. Fire the payload to the external Webhook (Zapier, Make, custom server, etc.)
+    // 3. Fire the Webhook
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: topic.id,
-        title: topic.topicName,
-        content: topic.content,
-        coreEntity: topic.coreEntity,
-        author: user.name || user.email,
-        publishedAt: new Date().toISOString()
-      })
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`Webhook responded with status: ${response.status}`);
+      throw new Error(`Webhook server responded with status: ${response.status}`);
     }
 
-    // 2. If successful, update the database status to move the Kanban card
+    // 4. If successful, update the status in our database
     await prisma.seoTopic.update({
       where: { id: topicId },
       data: { status: "Published" }
     });
 
-    // 3. Refresh the pipeline and editor UI
-    revalidatePath("/dashboard/topics");
-    revalidatePath(`/dashboard/editor/${topicId}`);
-    
-    return { success: true };
+    // 5. Refresh the UI
+    revalidatePath("/dashboard/library");
+    revalidatePath("/dashboard");
+
+    return true;
+
   } catch (error: any) {
-    console.error("Publishing failed:", error);
-    throw new Error(error.message || "Failed to publish to webhook.");
+    console.error("Webhook Error:", error);
+    throw new Error(error.message || "Failed to reach the webhook URL.");
   }
-}   
+}

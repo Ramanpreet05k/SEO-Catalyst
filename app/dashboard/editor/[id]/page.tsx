@@ -36,7 +36,7 @@ export default async function EditorPage({
 
   // If the topic doesn't exist (or they don't own it), send them back to the pipeline
   if (!topic) {
-    redirect("/dashboard/topics");
+    redirect("/dashboard/library");
   }
 
   return (

@@ -25,7 +25,8 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
         setIsOpen(false);
         setWebhookUrl("");
         alert("Success! Article payload sent to webhook and marked as Published.");
-        router.push("/dashboard/topics"); // Redirect back to pipeline
+        // Updated redirect to the new Content Library instead of the deleted pipeline
+        router.push("/dashboard/library"); 
       } catch (error: any) {
         alert(error.message || "Failed to publish. Check your webhook URL.");
       }

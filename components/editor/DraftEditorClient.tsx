@@ -9,6 +9,7 @@ import { analyzeDraftForAEO } from "@/app/actions/aeo";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
 import { PublishModal } from "@/components/editor/PublishModal";
+import RichTextEditor from "./RichTextEditor";
 
 const QUICK_ACTIONS = [
   "Fix grammar and spelling",
@@ -119,7 +120,8 @@ export function DraftEditorClient({ topic }: { topic: any }) {
       {/* Editor Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/topics" className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
+        <Link href="/dashboard/library" className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
+    <ArrowLeft className="w-5 h-5" />
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -176,13 +178,10 @@ export function DraftEditorClient({ topic }: { topic: any }) {
                 <p className="text-sm text-slate-500">Applying your brand guidelines to the draft.</p>
               </div>
             )}
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="# Start writing your article here..."
-              className="w-full h-full min-h-[800px] bg-white border-0 focus:ring-0 resize-none text-slate-800 text-[17px] leading-relaxed custom-scrollbar"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            />
+         <RichTextEditor 
+  content={content} 
+  onChange={setContent} 
+/>
           </div>
         </main>
 
