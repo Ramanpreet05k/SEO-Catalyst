@@ -1,26 +1,27 @@
-"use client";
+import { getServerSession } from "next-auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import DashboardLayoutClient from "@/components/dashboard/DashboardLayoutClient";
 
-import { useState } from "react";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { Navbar } from "@/components/dashboard/navbar";
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession();
+  if (!session?.user?.email) redirect("/login");
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // 1. Fetch the user's role securely on the server
+  let userRole = "WRITER"; 
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { workspaces: { take: 1 } }
+  });
 
+  if (user?.workspaces?.[0]) {
+    userRole = user.workspaces[0].role;
+  }
+
+  // 2. Pass the role to the Client Layout
   return (
-    <div className="flex h-screen bg-slate-50/50 overflow-hidden">
-      {/* Sidebar is open by default */}
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-        <Navbar sidebarOpen={isSidebarOpen} setSidebarOpen={setIsSidebarOpen} />
-        
-        <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+    <DashboardLayoutClient userRole={userRole}>
+      {children}
+    </DashboardLayoutClient>
   );
 }

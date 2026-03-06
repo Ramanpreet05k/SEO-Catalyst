@@ -7,16 +7,16 @@ import { LayoutDashboard, Target, Users, TrendingUp, ChevronLeft, Settings, Zap,
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  userRole?: string; // Added userRole prop
 }
 
-export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
+export function Sidebar({ isOpen, setIsOpen, userRole = "WRITER" }: SidebarProps) {
   const pathname = usePathname();
 
-const navItems = [
+  const navItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
     { icon: Library, label: "Content Library", href: "/dashboard/library" }, 
     { icon: Users, label: "Competitors", href: "/dashboard/competitors" },
@@ -56,7 +56,7 @@ const navItems = [
       <nav className="flex-1 px-4 space-y-1 mt-4">
         {navItems.map((item) => {
           // Check if the current pathname includes the href to keep it highlighted on sub-pages
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = pathname === item.href || (pathname.startsWith(`${item.href}/`) && item.href !== "/dashboard");
           
           return (
             <Link key={item.href} href={item.href}>
@@ -74,10 +74,30 @@ const navItems = [
         })}
       </nav>
 
-      <div className="p-4 border-t space-y-2">
+      <div className="p-4 border-t space-y-1">
+        {/* --- OWNER ONLY TEAM LINK --- */}
+        {userRole === "OWNER" && (
+          <Link href="/dashboard/settings/team">
+            <div className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-sm",
+              pathname.startsWith("/dashboard/settings/team")
+                ? "bg-slate-100 text-slate-900 font-bold" 
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            )}>
+              <Users className={cn("w-4 h-4", pathname.startsWith("/dashboard/settings/team") ? "text-slate-900" : "text-slate-400 group-hover:text-slate-900")} />
+              <span>Team Settings</span>
+            </div>
+          </Link>
+        )}
+
         <Link href="/dashboard/settings">
-          <div className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:text-slate-900 text-sm">
-            <Settings className="w-4 h-4" />
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-sm",
+            pathname === "/dashboard/settings"
+              ? "bg-slate-100 text-slate-900 font-bold" 
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          )}>
+            <Settings className={cn("w-4 h-4", pathname === "/dashboard/settings" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-900")} />
             <span>Settings</span>
           </div>
         </Link>

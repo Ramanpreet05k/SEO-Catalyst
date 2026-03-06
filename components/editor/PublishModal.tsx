@@ -2,21 +2,32 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Rocket, Loader2, Globe, ShoppingBag, Webhook, CheckCircle2 } from "lucide-react";
+import { Rocket, Loader2, Globe, ShoppingBag, Webhook, CheckCircle2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { publishToWebhook } from "@/app/actions/publish";
 
-export function PublishModal({ topicId, isPublished }: { topicId: string, isPublished: boolean }) {
+// Added 'role' to props to support RBAC
+export function PublishModal({ 
+  topicId, 
+  isPublished, 
+  role 
+}: { 
+  topicId: string, 
+  isPublished: boolean,
+  role: "OWNER" | "WRITER" 
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isPending, startTransition] = useTransition();
   const [selectedPlatform, setSelectedPlatform] = useState<"wordpress" | "shopify" | "webhook">("webhook");
   const router = useRouter();
 
+  const isWriter = role === "WRITER";
+
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPlatform !== "webhook") return; // Only webhook is active for MVP
+    if (isWriter || selectedPlatform !== "webhook") return; 
     if (!webhookUrl.trim()) return;
 
     startTransition(async () => {
@@ -25,7 +36,6 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
         setIsOpen(false);
         setWebhookUrl("");
         alert("Success! Article payload sent to webhook and marked as Published.");
-        // Updated redirect to the new Content Library instead of the deleted pipeline
         router.push("/dashboard/library"); 
       } catch (error: any) {
         alert(error.message || "Failed to publish. Check your webhook URL.");
@@ -37,15 +47,26 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          disabled={isPublished}
+          // Disable button if already published OR if user is only a Writer
+          disabled={isPublished || isWriter}
+          title={isWriter ? "Only Owners can publish content" : ""}
           className={`font-bold shadow-sm h-10 px-4 ${
             isPublished 
               ? "bg-emerald-100 text-emerald-700 cursor-not-allowed border border-emerald-200" 
+              : isWriter
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
               : "bg-indigo-600 hover:bg-indigo-700 text-white"
           }`}
         >
-          {isPublished ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
-          {isPublished ? "Published" : "Approve & Publish"}
+          {isPublished ? (
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+          ) : isWriter ? (
+            <ShieldAlert className="w-4 h-4 mr-2" />
+          ) : (
+            <Rocket className="w-4 h-4 mr-2" />
+          )}
+          
+          {isPublished ? "Published" : isWriter ? "Waiting for Approval" : "Approve & Publish"}
         </Button>
       </DialogTrigger>
       
@@ -61,8 +82,10 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
             
             {/* WordPress Option */}
             <div 
-              onClick={() => setSelectedPlatform("wordpress")}
-              className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedPlatform === "wordpress" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+              onClick={() => !isWriter && setSelectedPlatform("wordpress")}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              } ${selectedPlatform === "wordpress" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
             >
               <div className="flex items-center gap-3">
                 <Globe className={`w-5 h-5 ${selectedPlatform === "wordpress" ? "text-indigo-600" : "text-slate-400"}`} />
@@ -73,8 +96,10 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
 
             {/* Shopify Option */}
             <div 
-              onClick={() => setSelectedPlatform("shopify")}
-              className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedPlatform === "shopify" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+              onClick={() => !isWriter && setSelectedPlatform("shopify")}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              } ${selectedPlatform === "shopify" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
             >
               <div className="flex items-center gap-3">
                 <ShoppingBag className={`w-5 h-5 ${selectedPlatform === "shopify" ? "text-indigo-600" : "text-slate-400"}`} />
@@ -85,8 +110,10 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
 
             {/* Webhook Option (Active) */}
             <div 
-              onClick={() => setSelectedPlatform("webhook")}
-              className={`flex flex-col p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedPlatform === "webhook" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+              onClick={() => !isWriter && setSelectedPlatform("webhook")}
+              className={`flex flex-col p-4 rounded-xl border-2 transition-all ${
+                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              } ${selectedPlatform === "webhook" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -96,7 +123,7 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">Ready</span>
               </div>
               
-              {selectedPlatform === "webhook" && (
+              {selectedPlatform === "webhook" && !isWriter && (
                 <div className="animate-in fade-in slide-in-from-top-2 pt-2 border-t border-indigo-100">
                   <input 
                     type="url" 
@@ -115,11 +142,13 @@ export function PublishModal({ topicId, isPublished }: { topicId: string, isPubl
 
           <Button 
             type="submit" 
-            disabled={isPending || selectedPlatform !== "webhook" || !webhookUrl.trim()} 
+            disabled={isPending || isWriter || selectedPlatform !== "webhook" || !webhookUrl.trim()} 
             className="w-full bg-slate-900 hover:bg-black text-white rounded-xl h-11 font-bold shadow-sm"
           >
             {isPending ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Firing Webhook...</>
+            ) : isWriter ? (
+              "Permission Required to Publish"
             ) : selectedPlatform !== "webhook" ? (
               "Please Connect Platform in Settings"
             ) : (

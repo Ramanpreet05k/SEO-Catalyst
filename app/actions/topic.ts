@@ -8,8 +8,21 @@ export async function createNewArticle(formData: FormData) {
   const session = await getServerSession();
   if (!session?.user?.email) throw new Error("Unauthorized");
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  // 1. Fetch user and their workspace membership
+  const user = await prisma.user.findUnique({ 
+    where: { email: session.user.email },
+    include: {
+      workspaces: {
+        take: 1 // Get their primary workspace
+      }
+    }
+  });
+
   if (!user) throw new Error("User not found");
+  
+  // 2. Ensure a workspace exists (Safety fallback)
+  const workspaceId = user.workspaces[0]?.workspaceId;
+  if (!workspaceId) throw new Error("No active workspace found. Please refresh your dashboard.");
 
   const topicName = formData.get("topicName") as string;
   let coreEntity = formData.get("coreEntity") as string;
@@ -22,19 +35,19 @@ export async function createNewArticle(formData: FormData) {
     coreEntity = topicName.split(' ').slice(0, 2).join(' ').replace(/[^a-zA-Z0-9 ]/g, "") || "General";
   }
 
-  // Create the blank canvas
+  // 3. Create the article linked to BOTH the User and the Workspace
   const newTopic = await prisma.seoTopic.create({
     data: {
       topicName: topicName.trim(),
       coreEntity: coreEntity.trim(),
       status: "To Do", 
       userId: user.id,
+      workspaceId: workspaceId, // Now linked to the team workspace!
     }
   });
 
   revalidatePath("/dashboard/library");
   
-  // Return explicitly as a clean string
   return newTopic.id.toString(); 
 }
 
