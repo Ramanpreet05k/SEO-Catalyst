@@ -3,6 +3,9 @@
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import * as cheerio from "cheerio";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // <-- NEW IMPORT
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!); // <-- INITIALIZE GEMINI
 
 export type SEOIssue = {
   id: string;
@@ -97,5 +100,35 @@ export async function runSeoAudit(): Promise<SEOIssue[]> {
   } catch (error) {
     console.error("Scraping failed:", error);
     throw new Error("Failed to scan website. Please ensure your URL is correct in settings.");
+  }
+}
+
+// --- NEW: AI Fix Generator ---
+export async function generateAiFix(issueTitle: string, issueDescription: string) {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  
+  const prompt = `
+    You are an expert Technical SEO developer. 
+    I have an SEO issue on my website:
+    Issue: ${issueTitle}
+    Description: ${issueDescription}
+    
+    Provide the exact code snippet or content needed to fix this. 
+    Return ONLY the code or text. Do not wrap it in markdown blockticks like \`\`\`html.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    let fix = result.response.text().trim();
+    
+    // Fallback cleanup just in case Gemini includes backticks
+    if (fix.startsWith("\`\`\`")) {
+      fix = fix.replace(/^\`\`\`[a-z]*\n/, "").replace(/\n\`\`\`$/, "");
+    }
+    
+    return fix;
+  } catch (error) {
+    console.error("AI Generation Error:", error);
+    throw new Error("Failed to generate fix.");
   }
 }

@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { runSeoAudit, SEOIssue } from "@/app/actions/optimization";
-import { ChevronDown, ChevronUp, FileText, Wrench, Loader2, CheckCircle2 } from "lucide-react";
+import { runSeoAudit, generateAiFix, SEOIssue } from "@/app/actions/optimization";
+import { ChevronDown, ChevronUp, FileText, Wrench, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function OptimizationPage() {
   const [issues, setIssues] = useState<SEOIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>("missing-h1"); // Auto-expand first item
+  const [expandedId, setExpandedId] = useState<string | null>("missing-h1"); 
   const [filter, setFilter] = useState<"all" | "critical" | "warning">("all");
+  
+  // NEW: State to track which issue is currently generating AI code
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchAudit() {
@@ -31,14 +34,29 @@ export default function OptimizationPage() {
   const passedCount = issues.filter(i => i.type === "passed").length;
 
   const filteredIssues = issues.filter(i => {
-    if (i.type === "passed") return false; // Hide passed items from the main list by default
+    if (i.type === "passed") return false; 
     if (filter === "all") return true;
     return i.type === filter;
   });
 
   const handleMarkFixed = (id: string) => {
-    // Optimistically remove it from the UI for now
     setIssues(prev => prev.filter(i => i.id !== id));
+  };
+
+  // NEW: The handler to trigger the AI and update the UI
+  const handleGenerateAI = async (issue: SEOIssue) => {
+    setGeneratingId(issue.id);
+    try {
+      const aiResponse = await generateAiFix(issue.title, issue.description);
+      // Update the issue in our state so the new code snippet appears
+      setIssues(prev => prev.map(i => 
+        i.id === issue.id ? { ...i, codeSnippet: aiResponse } : i
+      ));
+    } catch (err) {
+      alert("Failed to generate AI fix. Please try again.");
+    } finally {
+      setGeneratingId(null);
+    }
   };
 
   if (isLoading) {
@@ -69,21 +87,18 @@ export default function OptimizationPage() {
         
         {/* TOP STATS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Critical Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900">Critical Issues</h3>
             <p className="text-xs text-slate-500 mb-4">Immediate Action Required</p>
             <div className="text-5xl font-semibold tracking-tight text-slate-900">{criticalCount}</div>
           </div>
           
-          {/* Warnings Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900">Warnings</h3>
             <p className="text-xs text-slate-500 mb-4">Needs Improvement</p>
             <div className="text-5xl font-semibold tracking-tight text-slate-900">{warningCount}</div>
           </div>
 
-          {/* Passed Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900">Passed Items</h3>
             <p className="text-xs text-slate-500 mb-4">Optimized</p>
@@ -131,10 +146,10 @@ export default function OptimizationPage() {
           ) : (
             filteredIssues.map((issue) => {
               const isExpanded = expandedId === issue.id;
+              const isGenerating = generatingId === issue.id;
 
               return (
                 <div key={issue.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                  {/* Issue Header (Clickable) */}
                   <div 
                     onClick={() => setExpandedId(isExpanded ? null : issue.id)}
                     className="flex items-start md:items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors"
@@ -160,13 +175,12 @@ export default function OptimizationPage() {
                     </div>
                   </div>
 
-                  {/* Expanded Content Area */}
                   {isExpanded && (
                     <div className="px-5 pb-5 pt-2 border-t border-slate-50">
                       <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 mt-2">
                         <div className="flex items-start gap-3 mb-4">
                           <Wrench className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <div>
+                          <div className="w-full">
                             {issue.whyItMatters && (
                               <div className="mb-4">
                                 <h5 className="text-sm font-bold text-slate-900 mb-1">Why this matters</h5>
@@ -186,7 +200,7 @@ export default function OptimizationPage() {
                             )}
 
                             {issue.codeSnippet && (
-                              <pre className="bg-white border border-slate-200 text-slate-600 text-xs p-4 rounded-lg overflow-x-auto mt-4 font-mono">
+                              <pre className="bg-white border border-slate-200 text-slate-800 text-xs p-4 rounded-lg overflow-x-auto mt-4 font-mono whitespace-pre-wrap">
                                 <code>{issue.codeSnippet}</code>
                               </pre>
                             )}
@@ -199,8 +213,13 @@ export default function OptimizationPage() {
                               Mark As Fixed
                             </Button>
                           ) : (
-                            <Button className="bg-slate-900 hover:bg-black text-white rounded-lg px-6 font-bold flex items-center gap-2">
-                              Generate With AI
+                            <Button 
+                              onClick={() => handleGenerateAI(issue)}
+                              disabled={isGenerating}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-6 font-bold flex items-center gap-2"
+                            >
+                              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                              {isGenerating ? "Writing code..." : "Generate With AI"}
                             </Button>
                           )}
                         </div>
