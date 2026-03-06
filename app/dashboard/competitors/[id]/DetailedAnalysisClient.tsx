@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, Zap, ShieldCheck, AlertTriangle, Lightbulb, Check, X, BarChart3 } from "lucide-react";
-import { runGapAnalysis } from "@/app/actions/competitor";
+import { runGapAnalysis } from "@/app/actions/competitors";
 
 export function DetailedAnalysisClient({ competitorId }: { competitorId: string }) {
   const [data, setData] = useState<any>(null);

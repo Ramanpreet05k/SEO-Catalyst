@@ -2,160 +2,79 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Rocket, Loader2, Globe, ShoppingBag, Webhook, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { publishToWebhook } from "@/app/actions/publish";
+import { CheckCircle2, Loader2, Globe, Sparkles } from "lucide-react";
+import { publishDraft } from "@/app/actions/draft";
 
-// Added 'role' to props to support RBAC
 export function PublishModal({ 
   topicId, 
   isPublished, 
   role 
 }: { 
-  topicId: string, 
-  isPublished: boolean,
-  role: "OWNER" | "WRITER" 
+  topicId: string; 
+  isPublished: boolean; 
+  role: "OWNER" | "WRITER";
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [selectedPlatform, setSelectedPlatform] = useState<"wordpress" | "shopify" | "webhook">("webhook");
   const router = useRouter();
 
-  const isWriter = role === "WRITER";
+  if (role !== "OWNER") return null;
 
-  const handlePublish = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isWriter || selectedPlatform !== "webhook") return; 
-    if (!webhookUrl.trim()) return;
-
+  const handlePublish = () => {
     startTransition(async () => {
       try {
-        await publishToWebhook(topicId, webhookUrl);
+        await publishDraft(topicId);
         setIsOpen(false);
-        setWebhookUrl("");
-        alert("Success! Article payload sent to webhook and marked as Published.");
         router.push("/dashboard/library"); 
-      } catch (error: any) {
-        alert(error.message || "Failed to publish. Check your webhook URL.");
+      } catch (error) {
+        alert("Failed to publish draft.");
       }
     });
   };
 
+  if (isPublished) {
+    return (
+      <Button disabled className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold opacity-100">
+        <CheckCircle2 className="w-4 h-4 mr-2" /> Published
+      </Button>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          // Disable button if already published OR if user is only a Writer
-          disabled={isPublished || isWriter}
-          title={isWriter ? "Only Owners can publish content" : ""}
-          className={`font-bold shadow-sm h-10 px-4 ${
-            isPublished 
-              ? "bg-emerald-100 text-emerald-700 cursor-not-allowed border border-emerald-200" 
-              : isWriter
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white"
-          }`}
-        >
-          {isPublished ? (
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-          ) : isWriter ? (
-            <ShieldAlert className="w-4 h-4 mr-2" />
-          ) : (
-            <Rocket className="w-4 h-4 mr-2" />
-          )}
-          
-          {isPublished ? "Published" : isWriter ? "Waiting for Approval" : "Approve & Publish"}
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm">
+          <Globe className="w-4 h-4 mr-2" /> Approve & Publish
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
-        <DialogHeader className="bg-slate-900 p-8 text-white border-b border-slate-800">
-          <Rocket className="w-8 h-8 mb-4 text-indigo-400" />
-          <DialogTitle className="text-2xl font-bold tracking-tight mb-1">Publish Options</DialogTitle>
-          <p className="text-slate-400 text-sm">Select your distribution platform to push this content live.</p>
-        </DialogHeader>
-
-        <form onSubmit={handlePublish} className="p-8 bg-slate-50">
-          <div className="space-y-4 mb-8">
-            
-            {/* WordPress Option */}
-            <div 
-              onClick={() => !isWriter && setSelectedPlatform("wordpress")}
-              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-              } ${selectedPlatform === "wordpress" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
-            >
-              <div className="flex items-center gap-3">
-                <Globe className={`w-5 h-5 ${selectedPlatform === "wordpress" ? "text-indigo-600" : "text-slate-400"}`} />
-                <span className="font-bold text-slate-900">WordPress</span>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-700">Not Connected</span>
-            </div>
-
-            {/* Shopify Option */}
-            <div 
-              onClick={() => !isWriter && setSelectedPlatform("shopify")}
-              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-              } ${selectedPlatform === "shopify" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingBag className={`w-5 h-5 ${selectedPlatform === "shopify" ? "text-indigo-600" : "text-slate-400"}`} />
-                <span className="font-bold text-slate-900">Shopify Blog</span>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-700">Not Connected</span>
-            </div>
-
-            {/* Webhook Option (Active) */}
-            <div 
-              onClick={() => !isWriter && setSelectedPlatform("webhook")}
-              className={`flex flex-col p-4 rounded-xl border-2 transition-all ${
-                isWriter ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-              } ${selectedPlatform === "webhook" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Webhook className={`w-5 h-5 ${selectedPlatform === "webhook" ? "text-indigo-600" : "text-slate-400"}`} />
-                  <span className="font-bold text-slate-900">Custom Webhook</span>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">Ready</span>
-              </div>
-              
-              {selectedPlatform === "webhook" && !isWriter && (
-                <div className="animate-in fade-in slide-in-from-top-2 pt-2 border-t border-indigo-100">
-                  <input 
-                    type="url" 
-                    required 
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://hooks.zapier.com/..." 
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-2">We will POST a JSON payload with the title, content, and author.</p>
-                </div>
-              )}
-            </div>
-
+      <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-700 p-8 text-white text-center">
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-
+          <DialogTitle className="text-2xl font-bold tracking-tight mb-2 text-white">Ready to Publish?</DialogTitle>
+          <p className="text-emerald-50 text-sm">This will mark the draft as complete and move it out of the active review queue.</p>
+        </div>
+        
+        <div className="p-8 bg-white flex flex-col gap-4">
           <Button 
-            type="submit" 
-            disabled={isPending || isWriter || selectedPlatform !== "webhook" || !webhookUrl.trim()} 
-            className="w-full bg-slate-900 hover:bg-black text-white rounded-xl h-11 font-bold shadow-sm"
+            onClick={handlePublish}
+            disabled={isPending}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 text-lg"
           >
-            {isPending ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Firing Webhook...</>
-            ) : isWriter ? (
-              "Permission Required to Publish"
-            ) : selectedPlatform !== "webhook" ? (
-              "Please Connect Platform in Settings"
-            ) : (
-              "Push to Webhook"
-            )}
+            {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : "Yes, Mark as Published"}
           </Button>
-        </form>
+          <Button 
+            onClick={() => setIsOpen(false)}
+            variant="ghost"
+            className="w-full text-slate-500 hover:text-slate-900 font-bold"
+          >
+            Cancel
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -12,11 +12,27 @@ export async function requestAiEdit(topicId: string, currentContent: string, ins
   const session = await getServerSession();
   if (!session?.user?.email) throw new Error("Unauthorized");
   
+  // 1. Fetch the topic and its workspace to get the brand voice
+  const topic = await prisma.seoTopic.findUnique({
+    where: { id: topicId },
+    include: { workspace: true }
+  });
+
+  if (!topic) throw new Error("Topic not found");
+
+  // 2. Format the brand voice if it exists
+  const brandVoice = topic.workspace?.brandVoice 
+    ? `\n\nSTRICT BRAND GUIDELINES AND TONE OF VOICE:\n${topic.workspace.brandVoice}` 
+    : "";
+
+  // 3. Inject it into the prompt
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  const prompt = `Rewrite this draft based on: "${instruction}"\n\nDRAFT:\n${currentContent}\n\nReturn ONLY markdown.`;
+  const prompt = `Rewrite this draft based on: "${instruction}"${brandVoice}\n\nDRAFT:\n${currentContent}\n\nReturn ONLY markdown.`;
+  
   const result = await model.generateContent(prompt);
   let newContent = result.response.text().trim().replace(/^```markdown\n/, "").replace(/\n```$/, "");
 
+  // 4. Update the database
   await prisma.seoTopic.update({
     where: { id: topicId },
     data: { content: newContent, status: "In Progress" }
@@ -87,4 +103,18 @@ export async function resolveComment(commentId: string, topicId: string) {
     data: { isResolved: true }
   });
   revalidatePath(`/dashboard/editor/${topicId}`);
+}
+
+export async function publishDraft(topicId: string) {
+  const session = await getServerSession();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  await prisma.seoTopic.update({
+    where: { id: topicId },
+    data: { status: "Published" }
+  });
+
+  revalidatePath(`/dashboard/editor/${topicId}`);
+  revalidatePath("/dashboard/library");
+  revalidatePath("/dashboard");
 }

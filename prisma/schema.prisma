@@ -1,104 +1,103 @@
-  generator client {
-    provider = "prisma-client-js"
-  }
+generator client {
+  provider = "prisma-client-js"
+}
 
-  datasource db {
-    provider = "mongodb"
-    url      = env("DATABASE_URL")
-  }
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
 
-  enum Role {
-    OWNER
-    WRITER
-  }
+enum Role {
+  OWNER
+  WRITER
+}
 
-  model User {
-    id                  String       @id @default(auto()) @map("_id") @db.ObjectId
-    email               String       @unique
-    name                String?
-    password            String?      
-    
-    website             String?
-    brandDescription    String?
-    region              String       @default("US")
-    language            String       @default("en")
-    onboardingCompleted Boolean      @default(false)
+model User {
+  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
+  email               String       @unique
+  name                String?
+  password            String?      
+  
+  website             String?
+  brandDescription    String?
+  region              String       @default("US")
+  language            String       @default("en")
+  onboardingCompleted Boolean      @default(false)
 
-    autoPublish         Boolean      @default(false)
-    requireApproval     Boolean      @default(true)
+  autoPublish         Boolean      @default(false)
+  requireApproval     Boolean      @default(true)
 
-    aeoScore            Int?
-    aeoStatus           String?
+  aeoScore            Int?
+  aeoStatus           String?
 
-    competitors         Competitor[]
-    seoTopics           SeoTopic[]
-    workspaces          WorkspaceMember[]
-  }
+  competitors         Competitor[]
+  seoTopics           SeoTopic[]
+  workspaces          WorkspaceMember[]
+}
 
-  model Workspace {
-    id          String            @id @default(auto()) @map("_id") @db.ObjectId
-    name        String            
-    createdAt   DateTime          @default(now())
-    
-    members     WorkspaceMember[]
-    topics      SeoTopic[]
-  }
+model Workspace {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String            
+  brandVoice  String?           // <-- NEW: Added to store AI editor guidelines
+  createdAt   DateTime          @default(now())
+  
+  members     WorkspaceMember[]
+  topics      SeoTopic[]
+}
 
-  model WorkspaceMember {
-    id          String    @id @default(auto()) @map("_id") @db.ObjectId
-    role        Role      @default(WRITER)
-    
-    userId      String    @db.ObjectId
-    user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    workspaceId String    @db.ObjectId
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+model WorkspaceMember {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  role        Role      @default(WRITER)
+  
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  workspaceId String    @db.ObjectId
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-    @@unique([userId, workspaceId])
-  }
+  @@unique([userId, workspaceId])
+}
 
-  model Competitor {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    name      String
-    url       String?
-    
-    userId    String   @db.ObjectId
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    createdAt DateTime @default(now())
-  }
+model Competitor {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  url       String?
+  
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
 
-  model SeoTopic {
-    id                String   @id @default(auto()) @map("_id") @db.ObjectId
-    topicName         String
-    content           String?
-    status            String   @default("To Do")     
-    priority          String   @default("Medium")    
-    coreEntity        String   @default("General")
-    suggestedEntities String[] @default([])
-    
-    userId            String   @db.ObjectId
-    user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model SeoTopic {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  topicName         String
+  content           String?
+  status            String   @default("To Do")     
+  priority          String   @default("Medium")    
+  coreEntity        String   @default("General")
+  suggestedEntities String[] @default([])
+  
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    workspaceId       String?  @db.ObjectId
-    workspace         Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId       String?  @db.ObjectId
+  workspace         Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-    // --- NEW: Relation to Comments ---
-    comments          Comment[]
+  comments          Comment[]
 
-    createdAt         DateTime @default(now())
-  }
+  createdAt         DateTime @default(now())
+}
 
-  // --- NEW: Comment Model for Feedback ---
-  model Comment {
-    id          String   @id @default(auto()) @map("_id") @db.ObjectId
-    text        String
-    role        Role     // Identifies if Owner or Writer left the note
-    userName    String?  // Display name for the sidebar
-    isResolved  Boolean  @default(false)
+model Comment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  text        String
+  role        Role     
+  userName    String?  
+  isResolved  Boolean  @default(false)
 
-    topicId     String   @db.ObjectId
-    topic       SeoTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId     String   @db.ObjectId
+  topic       SeoTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-    createdAt   DateTime @default(now())
-  }
+  createdAt   DateTime @default(now())
+}

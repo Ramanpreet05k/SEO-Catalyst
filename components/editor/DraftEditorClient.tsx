@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2, Save, Send, Wand2, ArrowLeft, Bot, PlusCircle, LayoutPanelLeft, CheckCircle2, Circle, ChevronDown, Copy, ShieldCheck, MessageSquare, User } from "lucide-react";
+import { Sparkles, Loader2, Save, Send, Wand2, ArrowLeft, Bot, PlusCircle, LayoutPanelLeft, CheckCircle2, Circle, ChevronDown, Copy, ShieldCheck, MessageSquare, User, Search, AlertCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requestAiEdit, saveDraftManually, submitForReview, rejectToInProgress, addComment, resolveComment } from "@/app/actions/draft";
 import { analyzeDraftForAEO } from "@/app/actions/aeo";
@@ -10,14 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
 import { PublishModal } from "@/components/editor/PublishModal";
 import RichTextEditor from "./RichTextEditor";
-import { ExportPdfButton } from "@/components/editor/ExportPdfButton"; // <-- Imported the new button
-
-const QUICK_ACTIONS = [
-  "Fix grammar and spelling",
-  "Make it sound more professional",
-  "Expand this into a longer article",
-  "Make it more concise and punchy"
-];
+import { ExportPdfButton } from "@/components/editor/ExportPdfButton";
 
 export function DraftEditorClient({ 
   topic, 
@@ -47,6 +40,7 @@ export function DraftEditorClient({
   // AEO State
   const [aeoData, setAeoData] = useState<any>(null);
   const [isAeoLoading, setIsAeoLoading] = useState(false);
+  const [isAeoModalOpen, setIsAeoModalOpen] = useState(false); // <-- NEW STATE
 
   const wordCount = useMemo(() => content.trim().split(/\s+/).filter((w: string) => w).length, [content]);
   
@@ -55,10 +49,6 @@ export function DraftEditorClient({
     if (list.length === 1) list.push("Strategy", "Optimization", "Growth"); 
     return Array.from(new Set(list)); 
   }, [topic]);
-
-  const completedEntitiesCount = useMemo(() => {
-    return targetEntities.filter(entity => content.toLowerCase().includes(entity.toLowerCase())).length;
-  }, [content, targetEntities]);
 
   // --- ACTIONS ---
   const handleSave = async () => {
@@ -133,6 +123,26 @@ export function DraftEditorClient({
     });
   };
 
+  // --- AEO Analysis Handler ---
+  const handleRunAeoAnalysis = async () => {
+    if (wordCount < 50) {
+      alert("Please write at least 50 words before running the AEO analysis.");
+      return;
+    }
+    
+    setIsAeoLoading(true);
+    try {
+      const result = await analyzeDraftForAEO(content);
+      setAeoData(result);
+      setIsAeoModalOpen(true); // Automatically open the big report on success
+    } catch (error) {
+      console.error(error);
+      alert("Failed to analyze draft. Make sure your website URL is saved in Settings.");
+    } finally {
+      setIsAeoLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       
@@ -172,7 +182,6 @@ export function DraftEditorClient({
             <Wand2 className="w-4 h-4 mr-2" /> AI Edit
           </Button>
 
-          {/* --- NEW EXPORT PDF BUTTON --- */}
           <ExportPdfButton 
             targetId="document-content" 
             defaultFileName={topic.topicName || "Draft_Export"} 
@@ -219,7 +228,6 @@ export function DraftEditorClient({
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar flex justify-center relative bg-white border-r border-slate-200">
-          {/* --- ADDED id="document-content" HERE --- */}
           <div id="document-content" className="w-full max-w-4xl relative bg-white p-4">
             {isPending && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-2xl border border-indigo-100" data-html2canvas-ignore>
@@ -228,7 +236,6 @@ export function DraftEditorClient({
               </div>
             )}
             
-            {/* Added a hidden print-only title so the PDF clearly shows what it is */}
             <div className="hidden print:block mb-8 border-b pb-4">
               <h1 className="text-3xl font-black text-slate-900">{topic.topicName}</h1>
               <p className="text-sm text-slate-500 mt-2">Core Entity: {topic.coreEntity}</p>
@@ -240,7 +247,6 @@ export function DraftEditorClient({
 
         {isSidebarOpen && (
           <aside className="w-[420px] bg-white flex flex-col z-20 shrink-0" data-html2canvas-ignore>
-            {/* ... Rest of your Sidebar code remains exactly the same ... */}
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h3 className="font-bold text-slate-900 flex items-center gap-2">
                 <Bot className="w-5 h-5 text-indigo-600" /> Analysis & Feedback
@@ -268,20 +274,85 @@ export function DraftEditorClient({
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-900">
+                
                 {activeTab === "Overview" && (
-                    <div className="p-6 space-y-4 animate-in fade-in">
-                        <div className="border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm">
-                            <div>
-                                <h3 className="text-sm font-bold flex items-center gap-1">
-                                    <ChevronDown className="w-4 h-4 text-slate-500" /> Words
-                                </h3>
-                                <p className="text-[11px] text-slate-500 ml-5">Total word count</p>
-                            </div>
-                            <span className="text-2xl font-bold">{wordCount.toLocaleString()}</span>
+                  <div className="p-6 space-y-6 animate-in fade-in">
+                      
+                      {/* Word Count Box */}
+                      <div className="border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm bg-white">
+                          <div>
+                              <h3 className="text-sm font-bold flex items-center gap-1">
+                                  <ChevronDown className="w-4 h-4 text-slate-500" /> Words
+                              </h3>
+                              <p className="text-[11px] text-slate-500 ml-5">Total word count</p>
+                          </div>
+                          <span className="text-2xl font-bold text-slate-900">{wordCount.toLocaleString()}</span>
+                      </div>
+
+                      <hr className="border-slate-100" />
+
+                      {/* AEO Engine Section (Sidebar Summary) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                            <Bot className="w-4 h-4 text-indigo-600" /> Answer Engine Optimization
+                          </h3>
                         </div>
-                    </div>
+
+                        {!aeoData ? (
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-center shadow-inner">
+                            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                              Analyze this draft against your live website's brand tone to see if AI search engines will cite it as an authoritative source.
+                            </p>
+                            <Button 
+                              onClick={handleRunAeoAnalysis}
+                              disabled={isAeoLoading}
+                              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 shadow-sm"
+                            >
+                              {isAeoLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                              {isAeoLoading ? "Analyzing..." : "Run AEO Audit"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4 animate-in slide-in-from-bottom-2">
+                            {/* Summary Card */}
+                            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                              <div className={`w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-xl font-black border-4 ${
+                                aeoData.informationGainScore > 80 ? 'border-emerald-500 text-emerald-600' : 
+                                aeoData.informationGainScore > 50 ? 'border-amber-500 text-amber-600' : 
+                                'border-rose-500 text-rose-600'
+                              }`}>
+                                {aeoData.informationGainScore}
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Information Gain</p>
+                                <p className="text-xs font-medium text-slate-900 leading-snug mt-1">{aeoData.verdict}</p>
+                              </div>
+                            </div>
+
+                            {/* Button to open the BIG report */}
+                            <Button 
+                              onClick={() => setIsAeoModalOpen(true)}
+                              className="w-full bg-slate-900 hover:bg-black text-white font-bold h-10 shadow-sm"
+                            >
+                              <FileText className="w-4 h-4 mr-2" /> View Detailed Report
+                            </Button>
+
+                            <Button 
+                              onClick={handleRunAeoAnalysis}
+                              disabled={isAeoLoading}
+                              variant="outline"
+                              className="w-full h-9 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50"
+                            >
+                              {isAeoLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : "Re-run Analysis"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                  </div>
                 )}
 
+                {/* Entities & Feedback Tabs remain exactly the same... */}
                 {activeTab === "Entities" && (
                     <div className="p-6 space-y-4 animate-in fade-in">
                         <p className="text-xs text-slate-500 font-medium">Entities found in content:</p>
@@ -334,8 +405,6 @@ export function DraftEditorClient({
                                 ))
                             )}
                         </div>
-
-                        {/* Comment Input Sticky at Bottom */}
                         <div className="p-4 border-t border-slate-100 bg-white sticky bottom-0">
                             <textarea 
                                 value={newComment}
@@ -358,7 +427,96 @@ export function DraftEditorClient({
         )}
       </div>
 
-      {/* AI Edit Modal */}
+      {/* --- BIG AEO AUDIT REPORT MODAL --- */}
+      <Dialog open={isAeoModalOpen} onOpenChange={setIsAeoModalOpen}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col rounded-2xl p-0 overflow-hidden border-0 shadow-2xl bg-slate-50">
+          
+          {/* Report Header */}
+          <div className="bg-slate-900 p-8 text-white shrink-0">
+            <div className="flex items-center gap-3 mb-6">
+              <Bot className="w-8 h-8 text-indigo-400" />
+              <div>
+                <DialogTitle className="text-2xl font-black tracking-tight text-white">AEO Analysis Report</DialogTitle>
+                <p className="text-slate-400 text-sm mt-1">Answer Engine Optimization insights for: <span className="text-white font-medium">{topic.topicName}</span></p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+              <div className={`w-20 h-20 shrink-0 rounded-full flex items-center justify-center text-3xl font-black border-4 ${
+                  aeoData?.informationGainScore > 80 ? 'border-emerald-500 text-emerald-400' : 
+                  aeoData?.informationGainScore > 50 ? 'border-amber-500 text-amber-400' : 
+                  'border-rose-500 text-rose-400'
+                }`}>
+                  {aeoData?.informationGainScore}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">Information Gain Score</h3>
+                <p className="text-slate-300 leading-relaxed">{aeoData?.verdict}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Report Body (2 Columns) */}
+          <div className="p-8 flex-1 overflow-y-auto custom-scrollbar flex gap-8">
+            
+            {/* Left Column: Missing Angles */}
+            <div className="flex-1 space-y-6">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-lg font-bold text-slate-900">Missing Angles</h3>
+              </div>
+              <p className="text-sm text-slate-600">To increase your chances of being cited as a unique source, consider weaving these concepts into your draft:</p>
+              
+              <div className="grid gap-4">
+                {aeoData?.missingAngles?.map((angle: string, i: number) => (
+                  <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex items-start gap-4">
+                    <div className="bg-amber-100 text-amber-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 mt-0.5">
+                      {i + 1}
+                    </div>
+                    <p className="text-slate-800 leading-relaxed">{angle}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Column: AI Snippet Preview (Simulated UI) */}
+            <div className="flex-1 space-y-6">
+              <div className="flex items-center gap-2">
+                <Search className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-lg font-bold text-slate-900">Search Engine View</h3>
+              </div>
+              <p className="text-sm text-slate-600">How an AI like Perplexity or Google SGE might summarize your current draft.</p>
+              
+              {/* Simulated SGE Box */}
+              <div className="bg-[#f0f4f9] border border-[#e8eaed] p-6 rounded-3xl relative">
+                <div className="absolute top-6 right-6">
+                  <Sparkles className="w-6 h-6 text-[#1a73e8]" />
+                </div>
+                <h4 className="font-medium text-[#202124] text-lg mb-4 pr-12">AI Overview</h4>
+                
+                <div className="text-[#4d5156] text-[15px] leading-[1.6] space-y-4 font-sans">
+                   {/* We split the snippet by newlines to render paragraphs naturally */}
+                  {aeoData?.llmOptimizedSnippet?.split('\n').map((paragraph: string, idx: number) => (
+                    <p key={idx}>{paragraph}</p>
+                  ))}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[#e8eaed] flex gap-2">
+                  <span className="bg-white border border-[#e8eaed] text-[#3c4043] text-xs px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    Sources
+                  </span>
+                  <span className="bg-white border border-indigo-200 text-indigo-700 text-xs px-3 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Your Website
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Edit Modal remains the same */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-xl rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
           <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 text-white">
@@ -371,7 +529,7 @@ export function DraftEditorClient({
                 value={instruction} 
                 onChange={(e) => setInstruction(e.target.value)} 
                 placeholder="How should I improve this article?"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32 text-slate-800"
             />
             <Button 
                 onClick={() => handleAiEdit()}
