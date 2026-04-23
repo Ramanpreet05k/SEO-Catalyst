@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   FileText, 
@@ -11,9 +11,14 @@ import {
   AlertCircle, 
   ShieldCheck, 
   Inbox,
-  PenTool
+  PenTool,
+  Loader2,
+  Globe,
+  Clock,
+  ChevronRight
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { runSeoAudit } from "@/app/actions/optimization";
 
 type Topic = {
   id: string;
@@ -38,7 +43,6 @@ export function DashboardClient({
   const isOwner = role === "OWNER";
   const totalTopics = topics.length;
   
-  // Refined Grouping for better Team visibility
   const todoCount = topics.filter(t => t.status === "Idea" || t.status === "To Do").length;
   const inProgressCount = topics.filter(t => t.status === "In Progress").length;
   const reviewCount = topics.filter(t => t.status === "Review").length;
@@ -53,17 +57,39 @@ export function DashboardClient({
   }).length;
   const goalProgress = Math.min(Math.round((publishedThisMonth / MONTHLY_GOAL) * 100), 100);
 
+  // --- LIVE SEO SCRAPER STATE ---
+  const [seoScore, setSeoScore] = useState<number | null>(null);
+  const [isScraping, setIsScraping] = useState(true);
+
+  useEffect(() => {
+    async function fetchScore() {
+      try {
+        const issues = await runSeoAudit();
+        const critical = issues.filter(i => i.type === "critical").length;
+        const warning = issues.filter(i => i.type === "warning").length;
+        
+        let score = 100 - (critical * 20) - (warning * 5);
+        if (score < 0) score = 0;
+        setSeoScore(score);
+      } catch (e) {
+        setSeoScore(null); 
+      } finally {
+        setIsScraping(false);
+      }
+    }
+    fetchScore();
+  }, []);
+
   // --- DONUT CHART DATA ---
   let pipelineData = [
     { name: 'To Do', value: todoCount, color: '#94a3b8' },
-    { name: 'Drafting', value: inProgressCount, color: '#3b82f6' }, // Blue
-    { name: 'In Review', value: reviewCount, color: '#f59e0b' },   // Amber
-    { name: 'Published', value: publishedCount, color: '#10b981' }, // Emerald
+    { name: 'Drafting', value: inProgressCount, color: '#6366f1' }, // Indigo
+    { name: 'In Review', value: reviewCount, color: '#f59e0b' },   
+    { name: 'Published', value: publishedCount, color: '#10b981' }, 
   ].filter(d => d.value > 0);
 
-  // Fallback if empty
   if (pipelineData.length === 0) {
-    pipelineData = [{ name: 'Empty', value: 1, color: '#f1f5f9' }];
+    pipelineData = [{ name: 'Empty', value: 1, color: '#f8fafc' }];
   }
 
   // --- AREA CHART DATA ---
@@ -93,22 +119,22 @@ export function DashboardClient({
   if (isOwner) {
     if (reviewQueue.length > 0) {
       nextAction = {
-        title: `${reviewQueue.length} Pending Approvals`,
-        desc: "You have drafts waiting for your review. Approve and publish them to hit your goals.",
+        title: `${reviewQueue.length} Pending`,
+        desc: "You have drafts waiting for your review. Approve and publish them.",
         btn: "Review Drafts",
         link: "/dashboard/library"
       };
     } else if (inProgressCount > 0) {
       nextAction = {
-        title: `${inProgressCount} Drafts in Progress`,
-        desc: "Your team is currently working on drafts. Check back later for reviews.",
+        title: `${inProgressCount} In Progress`,
+        desc: "Your team is currently working on drafts. Check back later.",
         btn: "View Library",
         link: "/dashboard/library"
       };
     } else if (todoCount > 0) {
       nextAction = {
         title: `${todoCount} Ideas Ready`,
-        desc: "You have topics waiting in the queue. Start drafting or assign them to a writer.",
+        desc: "You have topics waiting. Start drafting or assign them.",
         btn: "Assign Topics",
         link: "/dashboard/library"
       };
@@ -118,91 +144,85 @@ export function DashboardClient({
     if (inProgressCount > 0) {
       nextAction = {
         title: `${inProgressCount} Active Drafts`,
-        desc: "You have open drafts. Finish writing and submit them for review to the owner.",
+        desc: "You have open drafts. Finish writing and submit them for review.",
         btn: "Continue Writing",
         link: "/dashboard/library"
       };
     } else if (todoCount > 0) {
       nextAction = {
         title: `${todoCount} Topics Available`,
-        desc: "There are new topics in the 'To Do' queue. Grab one and start drafting!",
+        desc: "There are new topics in the queue. Grab one and start drafting!",
         btn: "Pick a Topic",
         link: "/dashboard/library"
       };
     } else if (reviewCount > 0) {
       nextAction = {
         title: "Waiting for Approval",
-        desc: "Your submitted drafts are currently being reviewed by the Owner. Great work!",
+        desc: "Your drafts are being reviewed by the Owner. Great work!",
         btn: "View Library",
         link: "/dashboard/library"
       };
     }
   }
 
-  const recentTopics = topics.slice(0, 4);
+  const recentTopics = topics.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 md:p-10 font-sans text-slate-900">
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="min-h-screen bg-[#FAFAFA] p-6 md:p-10 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
         
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* HEADER */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 border-b border-slate-200/60">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-              Welcome to {user.workspaces?.[0]?.workspace?.name || 'Your Workspace'}
-            </h1>
-            <p className="text-slate-500 mt-1">
-              Role: <span className="font-bold text-indigo-600 uppercase text-[11px] tracking-wider bg-indigo-50 px-2 py-0.5 rounded-md ml-1 mr-1">{role}</span> &bull; Monitoring your SEO pipeline progress.
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                {user.workspaces?.[0]?.workspace?.name || 'Your Workspace'}
+              </h1>
+              <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                {role}
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">
+              Overview and performance metrics for your content pipeline.
             </p>
           </div>
           <Link href="/dashboard/library">
-            <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-11 px-6 shadow-sm transition-colors flex items-center gap-2">
+            <button className="bg-slate-900 hover:bg-black text-white font-medium rounded-xl h-10 px-5 shadow-sm transition-all flex items-center gap-2 text-sm hover:scale-[1.02]">
               {isOwner ? <FileText className="w-4 h-4" /> : <PenTool className="w-4 h-4" />}
               {isOwner ? "Go to Library" : "Start Writing"}
             </button>
           </Link>
         </header>
 
-        {/* --- OWNER REVIEW QUEUE --- */}
+        {/* REVIEW QUEUE (OWNER ONLY) */}
         {isOwner && reviewQueue.length > 0 && (
-          <section className="bg-amber-50 border border-amber-200 rounded-3xl p-6 md:p-8 shadow-sm animate-in zoom-in-95 duration-300">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-500 p-2 rounded-xl">
-                  <Inbox className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-amber-900 flex items-center gap-2">
-                    Review Queue
-                    <span className="flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-ping" />
-                  </h2>
-                  <p className="text-amber-700 text-sm font-medium">There are {reviewQueue.length} articles waiting for your final approval.</p>
-                </div>
+          <section className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="bg-amber-100 text-amber-600 p-2 rounded-lg">
+                <Inbox className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-amber-900 flex items-center gap-2 tracking-tight">
+                  Action Required: Review Queue
+                  <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                </h2>
+                <p className="text-amber-700/80 text-xs font-medium mt-0.5">You have {reviewQueue.length} articles waiting for final approval.</p>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {reviewQueue.map((item) => (
                 <Link 
                   key={item.id} 
                   href={`/dashboard/editor/${item.id}`}
-                  className="bg-white border border-amber-100 p-5 rounded-2xl hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 transition-all group"
+                  className="bg-white/60 border border-amber-200/50 p-4 rounded-xl hover:bg-white hover:border-amber-400 hover:shadow-sm transition-all group"
                 >
-                  <div className="flex flex-col h-full justify-between">
-                    <div>
-                      <h3 className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors line-clamp-2">
-                        {item.topicName}
-                      </h3>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-2">
-                        Ready for Final Polish
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-amber-50 pt-3">
-                      <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Approve Now
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-amber-300 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
-                    </div>
+                  <h3 className="text-sm font-semibold text-slate-900 group-hover:text-amber-700 transition-colors line-clamp-1 mb-1">
+                    {item.topicName}
+                  </h3>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-[10px] font-bold text-amber-600/80 uppercase tracking-wider">Ready for Review</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </Link>
               ))}
@@ -210,44 +230,84 @@ export function DashboardClient({
           </section>
         )}
 
-        {/* TOP ROW: Progress & Goal Cards */}
+        {/* TOP ROW: BENTO METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-2 flex flex-col justify-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-              <Target className="w-24 h-24 text-indigo-600" />
-            </div>
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  Monthly Publishing Goal
-                </h2>
-                <p className="text-sm text-slate-500 mt-0.5">Keep the momentum going. Hit your target to build topical authority.</p>
+          
+          {/* Goal Card */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-indigo-500" />
+                <h2 className="text-sm font-semibold text-slate-600 tracking-tight">Monthly Target</h2>
               </div>
-              <div className="text-right">
-                <span className="text-3xl font-black text-indigo-600">{publishedThisMonth}</span>
-                <span className="text-slate-400 font-bold text-lg"> / {MONTHLY_GOAL}</span>
-              </div>
+              <span className="text-xs font-medium text-slate-400">{goalProgress}% Done</span>
             </div>
             
-            <div className="w-full bg-slate-100 rounded-full h-4 mb-2 relative z-10 overflow-hidden border border-slate-200">
-              <div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${goalProgress}%` }}
-              ></div>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-4xl font-bold tracking-tighter text-slate-900">{publishedThisMonth}</span>
+              <span className="text-sm font-medium text-slate-400">/ {MONTHLY_GOAL} published</span>
             </div>
-            <p className="text-xs font-bold text-slate-400 text-right relative z-10">{goalProgress}% Completed</p>
+
+            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-indigo-600 h-1.5 rounded-full transition-all duration-1000 ease-out relative"
+                style={{ width: `${goalProgress}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-6 rounded-2xl shadow-sm text-white flex flex-col justify-between">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertCircle className="w-5 h-5 text-indigo-400" />
-              <h3 className="font-bold text-indigo-50">Next Best Action</h3>
+          {/* SEO Health Card */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow relative">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-emerald-500" />
+                <h2 className="text-sm font-semibold text-slate-600 tracking-tight">Live SEO Health</h2>
+              </div>
+              {seoScore !== null && !isScraping && (
+                <Link href="/dashboard/optimization" className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 uppercase tracking-wider flex items-center gap-1 transition-colors">
+                  Audit <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
             </div>
-            <div>
-              <p className="text-2xl font-black text-white mb-1">{nextAction.title}</p>
-              <p className="text-indigo-200 text-sm leading-relaxed mb-4">{nextAction.desc}</p>
+
+            {isScraping ? (
+              <div className="flex flex-col items-start justify-center pt-2">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-300 mb-2" />
+                <p className="text-xs font-medium text-slate-400 animate-pulse">Scanning domain...</p>
+              </div>
+            ) : seoScore !== null ? (
+              <div className="flex items-baseline gap-2">
+                <span className={`text-4xl font-bold tracking-tighter ${seoScore > 80 ? 'text-emerald-600' : seoScore > 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+                  {seoScore}
+                </span>
+                <span className="text-sm font-medium text-slate-400">/ 100</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start justify-center pt-1">
+                <p className="text-xs text-slate-500 mb-3">No active URL configured.</p>
+                <Link href="/dashboard/settings">
+                  <span className="text-xs font-medium text-indigo-600 hover:text-indigo-700">Add in Settings &rarr;</span>
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Next Best Action Card */}
+          <div className="bg-slate-900 p-6 rounded-2xl shadow-md text-white relative overflow-hidden group">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-colors pointer-events-none"></div>
+            
+            <div className="flex items-center gap-2 mb-4 relative z-10">
+              <AlertCircle className="w-4 h-4 text-indigo-400" />
+              <h2 className="text-sm font-semibold text-indigo-100 tracking-tight">Suggested Action</h2>
+            </div>
+            
+            <div className="relative z-10">
+              <p className="text-xl font-bold text-white mb-1 tracking-tight">{nextAction.title}</p>
+              <p className="text-slate-400 text-xs leading-relaxed mb-4 line-clamp-2">{nextAction.desc}</p>
               <Link href={nextAction.link}>
-                <button className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold transition-colors">
+                <button className="w-full py-2 bg-white hover:bg-slate-100 text-slate-900 rounded-lg text-xs font-bold transition-colors">
                   {nextAction.btn}
                 </button>
               </Link>
@@ -255,56 +315,58 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* MIDDLE ROW: Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-          <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
+        {/* MIDDLE ROW: CHARTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Content Velocity */}
+          <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-slate-200/60 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-indigo-600" /> Content Velocity
-                </h2>
-                <p className="text-sm text-slate-500 mt-1">Total articles generated over the last 6 months.</p>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">Content Velocity</h2>
+                <p className="text-xs text-slate-500 font-medium mt-1">Articles generated over the last 6 months.</p>
               </div>
             </div>
             
-            <div className="h-[280px] w-full">
+            <div className="h-[240px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorArticles" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15}/>
                       <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }} />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '12px', padding: '8px 12px' }}
                     itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                   />
-                  <Area type="monotone" dataKey="Articles" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorArticles)" />
+                  <Area type="monotone" dataKey="Articles" stroke="#4f46e5" strokeWidth={2} fillOpacity={1} fill="url(#colorArticles)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-2">
-               Pipeline Status
-            </h2>
-            <p className="text-xs text-slate-500 mb-4">Current distribution of your {totalTopics} total topics.</p>
+          {/* Pipeline Donut */}
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col">
+            <div className="mb-4">
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">Pipeline Breakdown</h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">Distribution of {totalTopics} total topics.</p>
+            </div>
             
-            <div className="flex-1 min-h-[200px] relative">
+            <div className="flex-1 min-h-[180px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pipelineData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={4}
                     dataKey="value"
                     stroke="none"
                   >
@@ -313,24 +375,23 @@ export function DashboardClient({
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', padding: '6px 10px' }}
                     itemStyle={{ color: '#0f172a', fontWeight: 'bold', fontSize: '12px' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-black text-slate-900">{totalTopics}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+                <span className="text-2xl font-bold tracking-tight text-slate-900">{totalTopics}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-y-4 mt-4 pt-4 border-t border-slate-100 text-slate-900">
+            <div className="grid grid-cols-2 gap-y-3 mt-2 pt-4 border-t border-slate-100">
               {pipelineData.map((item) => (
                 item.name !== 'Empty' && (
-                  <div key={item.name} className="text-center">
-                    <div className="w-3 h-3 rounded-full mx-auto mb-1" style={{ backgroundColor: item.color }}></div>
-                    <p className="text-lg font-bold leading-none">{item.value}</p>
-                    <p className="text-[10px] font-semibold text-slate-500">{item.name}</p>
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
+                    <p className="text-[11px] font-semibold text-slate-600 truncate">{item.name}</p>
+                    <span className="text-[11px] font-bold text-slate-900 ml-auto">{item.value}</span>
                   </div>
                 )
               ))}
@@ -338,42 +399,57 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* BOTTOM ROW: Jump Back In */}
-        <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" /> Recent Activity
-            </h2>
-            <Link href="/dashboard/library" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">View Library &rarr;</Link>
+        {/* BOTTOM ROW: RECENT ACTIVITY LIST */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">Recent Activity</h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">Jump back into your latest drafts.</p>
+            </div>
+            <Link href="/dashboard/library" className="text-xs font-semibold text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors">
+              View All <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentTopics.map((topic) => (
-              <Link href={`/dashboard/editor/${topic.id}`} key={topic.id} className="block group">
-                <div className="p-5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md transition-all h-full flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        topic.status === 'Published' ? 'bg-emerald-100 text-emerald-700' : 
-                        topic.status === 'Review' ? 'bg-amber-100 text-amber-700' : 
-                        topic.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+          <div className="divide-y divide-slate-100">
+            {recentTopics.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">No activity found. Start a new topic!</div>
+            ) : (
+              recentTopics.map((topic) => (
+                <Link href={`/dashboard/editor/${topic.id}`} key={topic.id} className="block group">
+                  <div className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="hidden sm:flex w-10 h-10 rounded-full bg-slate-100 items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-colors shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-0.5">
+                          {topic.topicName}
+                        </h3>
+                        <div className="flex items-center gap-3 text-[11px] font-medium text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3" /> {topic.coreEntity}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {new Date(topic.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 ml-4 shrink-0">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${
+                        topic.status === 'Published' ? 'bg-emerald-50 text-emerald-700' : 
+                        topic.status === 'Review' ? 'bg-amber-50 text-amber-700' : 
+                        topic.status === 'In Progress' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {topic.status}
                       </span>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-colors" />
                     </div>
-                    <h3 className="text-[15px] font-bold text-slate-900 leading-snug group-hover:text-indigo-700 transition-colors line-clamp-2">
-                      {topic.topicName}
-                    </h3>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider line-clamp-1">
-                      Entity: {topic.coreEntity}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
         </div>
 

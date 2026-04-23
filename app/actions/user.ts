@@ -22,3 +22,15 @@ export async function updateUserProfile(formData: FormData) {
   // Instantly refresh the dashboard so the new data shows up
   revalidatePath("/dashboard");
 }
+export async function updateUserName(newName: string) {
+  const session = await getServerSession();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+
+  await prisma.user.update({
+    where: { email: session.user.email },
+    data: { name: newName }
+  });
+
+  // Instantly refresh the dashboard so the new name shows up everywhere
+  revalidatePath("/dashboard");
+}
