@@ -8,6 +8,9 @@ import * as cheerio from "cheerio";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+/**
+ * ADDS A NEW COMPETITOR TO THE LIST
+ */
 export async function addCompetitor(name: string, url: string) {
   const session = await getServerSession();
   if (!session?.user?.email) throw new Error("Unauthorized");
@@ -22,16 +25,21 @@ export async function addCompetitor(name: string, url: string) {
   revalidatePath("/dashboard/competitors");
 }
 
+/**
+ * DELETES A COMPETITOR
+ */
 export async function deleteCompetitor(id: string) {
   await prisma.competitor.delete({ where: { id } });
   revalidatePath("/dashboard/competitors");
 }
 
+/**
+ * INTERNAL LOGIC: SCRAPES AND ANALYZES VIA GEMINI
+ */
 export async function analyzeCompetitorGap(competitorUrl: string) {
   const session = await getServerSession();
   if (!session?.user?.email) throw new Error("Unauthorized");
 
-  // 1. Scrape the Competitor's website for context
   let competitorContext = "No live context available. Base assumptions on the URL.";
   try {
     const targetUrl = competitorUrl.startsWith('http') ? competitorUrl : `https://${competitorUrl}`;
@@ -53,9 +61,8 @@ export async function analyzeCompetitorGap(competitorUrl: string) {
     console.error("Scraping failed", e);
   }
 
-  // 2. Ask Gemini to find the content gaps
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash", 
+    model: "gemini-2.0-flash", 
     generationConfig: { responseMimeType: "application/json" } 
   });
   
@@ -83,7 +90,6 @@ export async function analyzeCompetitorGap(competitorUrl: string) {
   const result = await model.generateContent(prompt);
   let jsonString = result.response.text().trim();
   
-  // Clean up markdown block if Gemini wraps it
   if (jsonString.startsWith("```json")) {
       jsonString = jsonString.replace(/^```json\n/, "").replace(/\n```$/, "");
   }
@@ -91,6 +97,32 @@ export async function analyzeCompetitorGap(competitorUrl: string) {
   return JSON.parse(jsonString).ideas;
 }
 
+/**
+ * FIX: THE EXPORT VERCEL WAS LOOKING FOR
+ * Links the ID from the URL to the analysis logic
+ */
+export async function runGapAnalysis(competitorId: string) {
+  const competitor = await prisma.competitor.findUnique({
+    where: { id: competitorId }
+  });
+
+  if (!competitor) throw new Error("Competitor not found");
+
+  // Call the core analysis logic
+  const ideas = await analyzeCompetitorGap(competitor.url);
+
+  // Update last analyzed timestamp
+  await prisma.competitor.update({
+    where: { id: competitorId },
+    data: { lastAnalyzed: new Date() }
+  });
+
+  return ideas;
+}
+
+/**
+ * INJECTS A SUGGESTED TOPIC INTO THE PIPELINE
+ */
 export async function addSuggestedTopic(topicName: string, coreEntity: string) {
   const session = await getServerSession();
   if (!session?.user?.email) throw new Error("Unauthorized");
@@ -103,7 +135,6 @@ export async function addSuggestedTopic(topicName: string, coreEntity: string) {
   if (!user || user.workspaces.length === 0) throw new Error("Workspace not found");
   const workspaceId = user.workspaces[0].workspaceId;
 
-  // Inject the new topic directly into the To Do pipeline
   await prisma.seoTopic.create({
     data: {
       topicName,
