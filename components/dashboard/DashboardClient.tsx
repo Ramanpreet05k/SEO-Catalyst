@@ -2,17 +2,16 @@
 
 import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion"; 
+import { motion, AnimatePresence, Variants } from "framer-motion"; // Added Variants type
 import { 
   FileText, ArrowRight, Activity, Zap, Target, 
-  AlertCircle, ShieldCheck, Inbox, PenTool, 
-  Loader2, Globe, Clock, ChevronRight 
+  Inbox, PenTool, Loader2, Globe, Clock, ChevronRight 
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { runSeoAudit } from "@/app/actions/optimization";
 
-// --- ANIMATION CONFIGS ---
-const pageTransition = {
+// --- TYPE-SAFE ANIMATION CONFIGS ---
+const pageTransition: Variants = {
   hidden: { opacity: 0, scale: 0.98, y: 10 },
   visible: { 
     opacity: 1, 
@@ -20,13 +19,13 @@ const pageTransition = {
     y: 0,
     transition: { 
       duration: 0.8, 
-      ease: [0.16, 1, 0.3, 1],
+      ease: [0.16, 1, 0.3, 1], // Now typed correctly as Variants
       staggerChildren: 0.12 
     }
   }
 };
 
-const cardHover = {
+const cardHover: Variants = {
   hover: { 
     y: -8, 
     scale: 1.01,
@@ -35,9 +34,14 @@ const cardHover = {
   }
 };
 
-const textReveal = {
+const textReveal: Variants = {
   hidden: { opacity: 0, x: -10 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
+};
+
+const listItem: Variants = {
+  hidden: { opacity: 0, scale: 0.97, y: 10 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.4 } }
 };
 
 export function DashboardClient({ user, topics, reviewQueue = [], role }: any) {
@@ -247,19 +251,24 @@ export function DashboardClient({ user, topics, reviewQueue = [], role }: any) {
           </div>
         </motion.div>
 
-        {/* ACTIVITY LIST WITH STAGGERED SCALE */}
+        {/* ACTIVITY LIST WITH STAGGERED REVEAL */}
         <motion.div variants={textReveal} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden mb-20">
           <div className="p-8 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-black tracking-tight">Recent Activity</h2>
             <Link href="/dashboard/library" className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700">Open Library &rarr;</Link>
           </div>
-          <motion.div initial="hidden" animate="visible" className="divide-y divide-slate-50">
+          <motion.div 
+            initial="hidden" 
+            animate="visible" 
+            variants={{
+              visible: { transition: { staggerChildren: 0.05 } }
+            }}
+            className="divide-y divide-slate-50"
+          >
             {topics.slice(0, 5).map((topic: any) => (
               <motion.div 
                 key={topic.id} 
-                initial={{ opacity: 0, scale: 0.97 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
+                variants={listItem}
                 whileHover={{ backgroundColor: "#FAFBFF" }}
               >
                 <Link href={`/dashboard/editor/${topic.id}`} className="block p-6 px-10 flex items-center justify-between group">

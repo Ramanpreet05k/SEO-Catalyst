@@ -98,8 +98,8 @@ export async function analyzeCompetitorGap(competitorUrl: string) {
 }
 
 /**
- * FIX: THE EXPORT VERCEL WAS LOOKING FOR
- * Links the ID from the URL to the analysis logic
+ * FIX: TYPE NARROWING FOR VERCEL BUILD
+ * Ensures competitor.url is a string before passing to analyzeCompetitorGap
  */
 export async function runGapAnalysis(competitorId: string) {
   const competitor = await prisma.competitor.findUnique({
@@ -108,7 +108,12 @@ export async function runGapAnalysis(competitorId: string) {
 
   if (!competitor) throw new Error("Competitor not found");
 
-  // Call the core analysis logic
+  // TypeScript Fix: Ensure url is not null or undefined
+  if (!competitor.url) {
+    throw new Error("Competitor URL is missing. Cannot perform analysis.");
+  }
+
+  // Now competitor.url is guaranteed to be a string
   const ideas = await analyzeCompetitorGap(competitor.url);
 
   // Update last analyzed timestamp

@@ -41,7 +41,10 @@ export default async function SettingsPage() {
           </div>
           
           <div className="p-6 md:p-8">
-            <SettingsForm initialVoice={workspace.brandVoice || ""} />
+           <SettingsForm 
+  initialWebsite={user.website || ""} 
+  initialBrandVoice={workspace.brandVoice || ""} 
+/>
           </div>
         </div>
       ) : (

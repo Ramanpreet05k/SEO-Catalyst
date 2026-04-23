@@ -22,7 +22,12 @@ interface Competitor {
     url: string;
 }
 
-export function OnboardingForm() {
+// Added the interface to satisfy the TypeScript compiler
+interface OnboardingFormProps {
+    onStepChange?: (step: number) => void;
+}
+
+export function OnboardingForm({ onStepChange }: OnboardingFormProps) {
     const router = useRouter()
 
     // --- Flow State ---
@@ -47,18 +52,25 @@ export function OnboardingForm() {
     const [showAddModal, setShowAddModal] = useState(false)
     const [newBrand, setNewBrand] = useState<Competitor>({ name: "", url: "" })
 
+    // Utility to handle step changes and notify parent component
+    const changeStep = (newStep: number) => {
+        setStep(newStep);
+        if (onStepChange) {
+            onStepChange(newStep);
+        }
+    }
+
     // --- Step 1: Save Brand Info ---
     const handleDomainSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         try {
-            // Save initial brand details to DB so Gemini has context later
             const res = await fetch('/api/onboarding/save-brand', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ website, brandDescription })
             })
-            if (res.ok) setStep(2)
+            if (res.ok) changeStep(2)
         } catch (err) {
             console.error("Save failed", err)
         } finally {
@@ -75,7 +87,7 @@ export function OnboardingForm() {
             if (data.success && Array.isArray(data.suggestions)) {
                 const topics = data.suggestions.map((s: any) => s.topic)
                 setAllTopics(topics)
-                setSelectedTopics(topics.slice(0, 3)) // Default select first 3
+                setSelectedTopics(topics.slice(0, 3)) 
             }
         } catch (err) {
             console.error("Gemini failed", err)
@@ -140,7 +152,7 @@ export function OnboardingForm() {
         <div className="max-w-xl mx-auto py-12 px-6 relative">
             {/* Step Navigation */}
             {step > 1 && (
-                <button onClick={() => setStep(step - 1)} className="absolute -left-12 top-14 text-slate-400 hover:text-slate-900 transition-colors">
+                <button onClick={() => changeStep(step - 1)} className="absolute -left-12 top-14 text-slate-400 hover:text-slate-900 transition-colors">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
             )}
@@ -173,11 +185,11 @@ export function OnboardingForm() {
                 </form>
             )}
 
-            {/* --- Intermediary steps (2, 3, 4) omitted for brevity - logic same as previous versions --- */}
+            {/* --- Intermediary steps (2, 3, 4) --- */}
             {step >= 2 && step <= 4 && (
                 <div className="text-center py-20 space-y-6 animate-in fade-in">
                     <h1 className="text-3xl font-bold">Step {step}: Analysis & Configuration</h1>
-                    <Button onClick={() => setStep(step + 1)} className="bg-black text-white px-10 h-12 rounded-xl">Continue</Button>
+                    <Button onClick={() => changeStep(step + 1)} className="bg-black text-white px-10 h-12 rounded-xl">Continue</Button>
                 </div>
             )}
 
@@ -210,7 +222,7 @@ export function OnboardingForm() {
                             ))
                         )}
                     </div>
-                    <Button onClick={() => setStep(6)} className="w-full h-14 bg-slate-900 text-white rounded-xl font-bold">Continue</Button>
+                    <Button onClick={() => changeStep(6)} className="w-full h-14 bg-slate-900 text-white rounded-xl font-bold">Continue</Button>
                 </div>
             )}
 
@@ -232,7 +244,6 @@ export function OnboardingForm() {
                                 className="h-16 pl-12 pr-24 text-lg border-2 border-slate-200 rounded-2xl shadow-sm focus-visible:border-slate-900"
                                 onKeyDown={(e) => e.key === 'Enter' && (setNewBrand({ name: searchQuery, url: "" }), setShowAddModal(true))}
                             />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-100 rounded-md text-[10px] font-bold text-slate-500 border">ENTER ↵</div>
                         </div>
 
                         {showDropdown && (

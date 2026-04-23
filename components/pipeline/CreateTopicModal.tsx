@@ -4,16 +4,30 @@ import { useState, useTransition } from "react";
 import { Plus, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createCustomTopic } from "@/app/actions/topic";
+import { createNewArticle } from "@/app/actions/topic"; // Changed from createCustomTopic
+import { useRouter } from "next/navigation";
 
 export function CreateTopicModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const handleSubmit = (formData: FormData) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
     startTransition(async () => {
-      // This action automatically redirects the user to the editor on success
-      await createCustomTopic(formData);
+      try {
+        // Call the correct exported function
+        const newTopicId = await createNewArticle(formData);
+        
+        setIsOpen(false);
+        // Navigate the user to the editor for their new topic
+        router.push(`/dashboard/editor/${newTopicId}`);
+      } catch (error) {
+        console.error("Failed to create topic:", error);
+        alert("Something went wrong. Please try again.");
+      }
     });
   };
 
@@ -32,7 +46,8 @@ export function CreateTopicModal() {
           <p className="text-sm text-slate-500">Manually add a specific article to your pipeline and start writing.</p>
         </DialogHeader>
 
-        <form action={handleSubmit} className="p-6 space-y-6">
+        {/* Changed from action={handleSubmit} to onSubmit to handle the transition and redirect manually */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-indigo-500" /> Topic / Target Keyword
@@ -60,4 +75,4 @@ export function CreateTopicModal() {
       </DialogContent>
     </Dialog>
   );
-}   
+}

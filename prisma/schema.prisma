@@ -38,7 +38,7 @@ model User {
 model Workspace {
   id          String            @id @default(auto()) @map("_id") @db.ObjectId
   name        String            
-  brandVoice  String?           // <-- NEW: Added to store AI editor guidelines
+  brandVoice  String?           
   createdAt   DateTime          @default(now())
   
   members     WorkspaceMember[]
@@ -59,14 +59,21 @@ model WorkspaceMember {
 }
 
 model Competitor {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  url       String?
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  url           String?
   
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // --- NEW FIELDS TO FIX BUILD ERROR ---
+  lastAnalyzed  DateTime? 
+  lastScraped   DateTime?
+  // -------------------------------------
+
+  userId        String    @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  createdAt DateTime @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model SeoTopic {

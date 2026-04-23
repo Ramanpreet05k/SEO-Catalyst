@@ -19,13 +19,16 @@ export default function RichTextEditor({ content, onChange }: { content: string,
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.storage.markdown.getMarkdown());
+      // TypeScript Fix: Cast storage to 'any' to access the markdown extension
+      const markdown = (editor.storage as any).markdown.getMarkdown();
+      onChange(markdown);
     },
   });
 
   useEffect(() => {
     if (editor && content) {
-      const currentContent = editor.storage.markdown.getMarkdown();
+      // TypeScript Fix: Cast storage to 'any' here as well
+      const currentContent = (editor.storage as any).markdown.getMarkdown();
       if (content !== currentContent) {
         editor.commands.setContent(content);
       }

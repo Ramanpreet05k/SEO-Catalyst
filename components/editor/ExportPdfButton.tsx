@@ -13,7 +13,6 @@ export function ExportPdfButton({ targetId, defaultFileName }: { targetId: strin
       // Dynamically import html2pdf to prevent Next.js SSR errors
       const html2pdf = (await import("html2pdf.js")).default;
       
-      // Target the specific <div> that contains your drafted text
       const element = document.getElementById(targetId);
 
       if (!element) {
@@ -24,13 +23,25 @@ export function ExportPdfButton({ targetId, defaultFileName }: { targetId: strin
 
       // Configure the PDF layout
       const opt = {
-        margin:       0.75, // 0.75 inch margins
+        margin:       0.75, 
         filename:     `${defaultFileName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        image: { 
+          type: 'jpeg' as const, // Added 'as const' to satisfy TypeScript
+          quality: 0.98 
+        },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          letterRendering: true 
+        },
+        jsPDF: { 
+          unit: 'in' as const, // Added for safety
+          format: 'letter' as const, 
+          orientation: 'portrait' as const // Added 'as const' to satisfy TypeScript
+        }
       };
 
+      // @ts-ignore - html2pdf internal types can be finicky during build
       await html2pdf().set(opt).from(element).save();
     } catch (error) {
       console.error("Export failed:", error);

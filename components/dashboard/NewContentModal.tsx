@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react"; // Added useTransition
 import { PenLine, FileText, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { createNewArticle } from "@/app/actions/topic";
 
 export function NewContentModal({ topics }: { topics: any[] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition(); // Initialized transition hook
   const router = useRouter();
 
   const handleSelectTopic = (id: string) => {
@@ -17,10 +17,11 @@ export function NewContentModal({ topics }: { topics: any[] }) {
     router.push(`/dashboard/editor/${id}`);
   };
 
-const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // startTransition is now defined and will handle the async state
     startTransition(async () => {
       try {
         // Use the new function, which returns the ID of the new draft
@@ -29,6 +30,7 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         // Push the user directly into their new AI editor canvas
         router.push(`/dashboard/editor/${newTopicId}`);
       } catch (error) {
+        console.error(error);
         alert("Failed to create article. Please try again.");
       }
     });
@@ -58,8 +60,9 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
               placeholder="Or type a custom topic..." 
               className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 font-bold">
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {/* Used isPending for the loading state */}
+            <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 font-bold">
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             </Button>
           </form>
 
